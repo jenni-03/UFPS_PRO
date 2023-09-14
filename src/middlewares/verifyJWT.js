@@ -1,5 +1,5 @@
-const jwt = require('jsonwebtoken');
-const Usuario = require('../models/Usuario');
+import jwt from 'jsonwebtoken';
+import Usuario from '../models/Usuario';
 
 
 /** Middleware encargado de la verficicación del token de acceso de un usuario  */
@@ -45,4 +45,4 @@ const verifyJWT = (req, res, next) => {
 };
 
 
-module.exports = verifyJWT;
+export default verifyJWT;

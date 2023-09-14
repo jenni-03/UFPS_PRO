@@ -1,4 +1,4 @@
-const bcrypt = require('bcrypt');
+import bcrypt from 'bcrypt';
 
 // Función encargada de la encriptación de una contraseña
 const encrypt = async (password) => {
@@ -11,4 +11,4 @@ const encrypt = async (password) => {
 
 };
 
-module.exports = encrypt;
+export default encrypt;

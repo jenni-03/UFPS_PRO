@@ -4,22 +4,21 @@ import logger from './middlewares/logger.js';
 import sequelize from './database/db.js';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
-// const corsOptions = require('./util/corsOptions');
-import path from 'node:path';
-// const generateRole = require('./util/generateRole');
-// const createAdminUser = require('./util/createAdminUser');
+import corsOptions from './util/corsOptions.js';
+import generateRole from './util/generateRole.js';
+import createAdminUser from './util/createAdminUser.js';
 
 // Importamos las tablas a crear
-// require('./database/associations');
+import './database/associations.js';
 
 // Importar Rutas de la API
-/*const authRoutes = require('./routes/auth.routes');
-const userRoutes = require('./routes/user.routes');
-const preguntasRoutes = require('./routes/preguntas.routes');
-const competenciaRoutes = require('./routes/competencia.routes');
-const categoriaRoutes = require('./routes/categoria.routes');
-const pruebaRoutes = require('./routes/prueba.routes');
-const convocatoriaRoutes = require('./routes/convocatoria.routes');*/
+/*import authRoutes from './routes/auth.routes.js';
+import userRoutes from './routes/user.routes.js';
+import preguntasRoutes from './routes/preguntas.routes.js';
+import competenciaRoutes from './routes/competencia.routes.js';
+import categoriaRoutes from './routes/categoria.routes.js';
+import pruebaRoutes from './routes/prueba.routes.js';
+import convocatoriaRoutes from './routes/convocatoria.routes.js';*/
 
 // Inicializar el contexto principal
 const app = express();
@@ -27,15 +26,9 @@ const app = express();
 // Puerto de escucha del servidor
 const PORT = process.env.PORT || 3500;
 
-// Especificamos el directorio de archivos estáticos
-/*app.use(express.static(path.resolve(__dirname, './public')));
-
-app.use('directors', express.static(path.resolve(__dirname, './public/directors')));
-
-app.use('questions', express.static(path.resolve(__dirname, './public/questions')));*/
 
 // Middlwares
-//app.use(cors(corsOptions));
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(cookieParser());
 
@@ -67,13 +60,14 @@ app.all('*', (req, res) => {
 
 
 // Corremos el servidor
-sequelize.authenticate()
-    /*.then(() => {
+sequelize.sync()
+    .then(() => {
 
         // Creamos los roles y el usuario admin
-        return Promise.all([generateRole(), createAdminUser()]);
+        generateRole();
+        createAdminUser();
 
-    })*/
+    })
     .then(() => {
 
         // Iniciamos el servidor una vez que las tablas se sincronizen

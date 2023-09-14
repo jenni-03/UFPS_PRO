@@ -1,9 +1,9 @@
-const nodeMailer = require('nodemailer');
-const mailGen = require('mailgen');
-const crypto = require('crypto');
-const PasswordReset = require('../models/PasswordReset');
-const bcrypt = require('bcrypt');
-const {email_address, email_password} = require('../config')
+import nodeMailer from 'nodemailer';
+import mailGen from 'mailgen';
+import crypto from 'crypto';
+import PasswordReset from '../models/PasswordReset.js';
+import bcrypt from 'bcrypt';
+import {email_address, email_password} from '../config.js' // -> revisar
 
 
 /** Función encargada de el envio de correo para el restablecimiento de contraseña de un 
@@ -100,4 +100,4 @@ const sendResetEmail = async (user, redirectURL) => {
 
 }
 
-module.exports = sendResetEmail;
+export default sendResetEmail;

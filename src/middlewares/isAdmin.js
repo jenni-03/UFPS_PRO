@@ -1,5 +1,5 @@
-const Usuario = require('../models/Usuario');
-const Rol = require('../models/Rol');
+import Usuario from '../models/Usuario.js';
+import Rol from '../models/Rol.js';
 
 
 /** Middleware encargado de verificar que un usuario sea administrador */
@@ -25,4 +25,4 @@ const isAdmin = async (req, res, next) => {
 
 };
 
-module.exports = isAdmin;
+export default isAdmin;

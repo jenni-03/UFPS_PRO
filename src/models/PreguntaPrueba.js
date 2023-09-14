@@ -1,7 +1,7 @@
-const {DataTypes} = require('sequelize');
+import { DataTypes } from 'sequelize';
 
 // Impotamos el objeto de conexión
-const sequelize = require('../database/db');
+import sequelize from '../database/db.js';
 
 
 // Creamos el esquema del modelo
@@ -33,4 +33,4 @@ const PreguntaPrueba = sequelize.define('pregunta_prueba', {
 
 
 // Exportamos el modelo 
-module.exports = PreguntaPrueba;
+export default PreguntaPrueba;

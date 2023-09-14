@@ -1,7 +1,7 @@
-const {DataTypes} = require('sequelize');
+import { DataTypes } from 'sequelize';
 
 // Importamos el modelo de conexión
-const sequelize = require('../database/db');
+import sequelize from '../database/db.js';
 
 
 // Creamos el esquema del modelo
@@ -63,4 +63,4 @@ const Inscripcion = sequelize.define('inscripciones', {
 
 
 // Exportamos el modelo de inscripciones
-module.exports = Inscripcion;
+export default Inscripcion;

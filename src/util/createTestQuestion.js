@@ -1,7 +1,7 @@
-const Pregunta = require('../models/Pregunta');
-const PreguntaPrueba = require('../models/PreguntaPrueba');
+import Pregunta from '../models/Pregunta.js';
+import PreguntaPrueba from '../models/PreguntaPrueba.js';
 
-const createTestQuestion = async (id_prueba, id_categoria, cant_preguntas_categoria, semestre, transaction) => {
+export const createTestQuestion = async (id_prueba, id_categoria, cant_preguntas_categoria, semestre, transaction) => {
     
     try {
 
@@ -46,8 +46,4 @@ const createTestQuestion = async (id_prueba, id_categoria, cant_preguntas_catego
         throw new Error(`Error al agregar la pregunta a la prueba: ${error.message}`)
     }
 
-}
-
-module.exports = {
-    createTestQuestion
 }

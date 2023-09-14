@@ -1,5 +1,5 @@
-const nodeMailer = require('nodemailer');
-const mailGen = require('mailgen');
+import nodeMailer from 'nodemailer';
+import mailGen from 'mailgen';
 
 
 /** Función encargada de llevar a cabo el envio de las credenciales a los usuarios que aun no se encuentran registrados
@@ -66,4 +66,4 @@ const generateEmail = async (userName, userEmail, userPassword) => {
 };
 
 
-module.exports = generateEmail;
+export default generateEmail;
