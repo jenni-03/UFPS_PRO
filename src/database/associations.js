@@ -1,17 +1,17 @@
 // Importamos los modelos a asociar
-const User = require('../models/Usuario');
-const Rol = require('../models/Rol');
-const Inscripcion = require('../models/Inscripcion');
-const Convocatoria = require('../models/Convocatoria');
-const Resultado = require('../models/Resultado');
-const Prueba = require('../models/Prueba');
-const Categoria = require('../models/Categoria');
-const Pregunta = require('../models/Pregunta');
-const ConfiguracionCategoria = require('../models/ConfiguracionCategoria');
-const Competencia = require('../models/Competencia');
-const PruebaCompetencia = require('../models/PruebaCompetencia');
-const PreguntaPrueba = require('../models/PreguntaPrueba');
-const PasswordReset = require('../models/PasswordReset');
+import User from '../models/Usuario.js';
+import Rol from '../models/Rol.js';
+import Inscripcion from '../models/Inscripcion.js';
+import Convocatoria from '../models/Convocatoria.js';
+import Resultado from '../models/Resultado.js';
+import Prueba from '../models/Prueba.js';
+import Categoria from '../models/Categoria.js';
+import Pregunta from '../models/Pregunta.js';
+import ConfiguracionCategoria from '../models/ConfiguracionCategoria.js';
+import Competencia from '../models/Competencia.js';
+import PruebaCompetencia from '../models/PruebaCompetencia.js';
+import PreguntaPrueba from '../models/PreguntaPrueba.js';
+import PasswordReset from '../models/PasswordReset.js';
 
 
 // Definimos la relación Usuario - PasswordReset

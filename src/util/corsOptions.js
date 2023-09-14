@@ -1,4 +1,4 @@
-const allowedOrigins = require('./allowedOrigins');
+import { allowedOrigins } from './allowedOrigins.js';
 
 // Definimos la configuración CORS
 const corsOptions = {
@@ -20,4 +20,4 @@ const corsOptions = {
 
 };
 
-module.exports = corsOptions;
+export default corsOptions;

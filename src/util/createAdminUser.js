@@ -1,7 +1,8 @@
-const Usuario = require('../models/Usuario');
-const Rol = require('../models/Rol');
-const sequelize = require('../database/db');
-const bcrypt = require('bcrypt');
+import Usuario from '../models/Usuario.js';
+import Rol from '../models/Rol.js';
+import sequelize from '../database/db.js';
+import bcrypt from 'bcrypt';
+import logger from '../middlewares/logger.js';
 
 // Función encargada de crear el usuario administrador
 const createAdminUser = async () => {
@@ -42,7 +43,7 @@ const createAdminUser = async () => {
                     rol_id: adminRole.id
                 }, {transaction: t});
 
-                console.log('Usuario administrador creado correctamente');
+                logger.info('Usuario administrador creado correctamente');
 
             }
 
@@ -50,9 +51,9 @@ const createAdminUser = async () => {
         });
 
     }catch(error){
-        console.log(error.message);
+        logger.error(`Error al crear usuario administrador: ${error.message}`);
     }
 
 };
 
-module.exports = createAdminUser;
+export default createAdminUser;

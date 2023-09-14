@@ -1,11 +1,11 @@
-const {DataTypes} = require('sequelize');
+import { DataTypes } from 'sequelize';
 
 //Importamos el objeto de conexión
-const sequelize = require('../database/db');
+import sequelize from '../database/db.js';
 
 
 // Creamos el esquema del modelo
-const Categoria =sequelize.define('categorias', {
+const Categoria = sequelize.define('categorias', {
     id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
@@ -54,4 +54,4 @@ const Categoria =sequelize.define('categorias', {
 });
 
 // Exportamos el modelo
-module.exports = Categoria;
+export default Categoria;

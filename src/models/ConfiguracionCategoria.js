@@ -1,7 +1,7 @@
-const {DataTypes} = require('sequelize');
+import { DataTypes } from 'sequelize';
 
 //Importamos el objeto de conexión
-const sequelize = require('../database/db');
+import sequelize from '../database/db.js';
 
 
 // Creamos el esquema del modelo
@@ -61,4 +61,4 @@ const ConfiguracionCategoria = sequelize.define('configuracion_categoria', {
     timestamps: false
 });
 
-module.exports = ConfiguracionCategoria;
+export default ConfiguracionCategoria;

@@ -1,4 +1,5 @@
-const Rol = require('../models/Rol');
+import Rol from '../models/Rol.js';
+import logger from '../middlewares/logger.js';
 
 // Verificar si los roles ya existen en la BD
 const generateRole = () => {
@@ -18,15 +19,15 @@ const generateRole = () => {
     
             // Creamos los roles
             Rol.bulkCreate(predefinedRoles).then(() => {
-                console.log('Predefined roles created successfully');
+                logger.info('Roles predefinidos creados correctamente');
             })
-            .catch((err) => console.error('Error creating predefined roles', err.message));
+            .catch((err) => logger.error(`Error al crear roles predefinidos: ${err.message}`));
     
         }
     
-    }).catch((err) => console.error('Error checking roles existence', err.message));
+    }).catch((err) => logger.error(`Error al verificar roles existentes: ${err.message}`));
 
 
 };
 
-module.exports = generateRole;
+export default generateRole;

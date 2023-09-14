@@ -1,10 +1,10 @@
-const {Router} = require('express');
+import { Router } from 'express';
 
 // Importamos las funciones del controlador
-const authController = require('../controllers/authController');
+import authController from '../controllers/authController.js';
 
 // Middlewares
-const verifyJWT = require('../middlewares/verifyJWT');
+import verifyJWT from '../middlewares/verifyJWT.js';
 
 // Inicializamos el router
 const router = Router();
@@ -42,4 +42,4 @@ router.post('/requestPasswordReset', authController.requestPasswordRst);
 router.post('/resetPassword', authController.resetPassword);
 
 // Exportamos el router
-module.exports = router;
+export default router;
