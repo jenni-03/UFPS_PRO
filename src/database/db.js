@@ -1,6 +1,6 @@
 import { Sequelize } from 'sequelize';
 import configuration from '../config.js';
-
+import logger from '../middlewares/logger.js';
 
 const { database, username, password, host, port } = configuration;
 

@@ -13,11 +13,14 @@ const PasswordReset = sequelize.define('password_resets', {
     uniqueString: {
         type: DataTypes.STRING
     },
-    createdAt: {
+    created_At: {
         type: DataTypes.DATE
     },
-    expiresAt: {
+    expires_At: {
         type: DataTypes.DATE
+    },
+    expired: {
+        type: DataTypes.BOOLEAN
     },
     usuario_id: {
         type: DataTypes.INTEGER,
@@ -26,7 +29,12 @@ const PasswordReset = sequelize.define('password_resets', {
             key: 'id'
         }
     }
+}, {
+    timestamps: true,
+    updatedAt: 'lastUpdate',
+    createdAt: false
 });
+
 
 // Exportamos el modelo
 export default PasswordReset;
