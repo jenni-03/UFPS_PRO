@@ -102,7 +102,9 @@ export const directorSchema = z.object({
 // Esquema para usuario estudiante
 const studentSchema = z.object({
 
-    nombre: z
+    body: z.object({
+
+        nombre: z
         .string({
             invalid_type_error: 'El nombre del estudiante solo puede ser texto',
             required_error: 'El nombre del estudiante es requerido'
@@ -110,15 +112,15 @@ const studentSchema = z.object({
         .min(3, { message: 'El nombre del estudiante es muy corto' })
         .max(45, { message: 'El nombre del estudiante supera la cant. de caracteres permitida' }),
 
-    apellido: z
+        apellido: z
         .string({
             invalid_type_error: 'El apellido del estudiante solo puede ser texto',
             required_error: 'El apellido del estudiante es requerido'
         })
         .min(3, { message: 'El apellido del estudiante  es muy corto' })
         .max(55, { message: 'El apellido del estudiante supera la cant. de caracteres permitida' }),
-    
-    codigo: z
+
+        codigo: z
         .string({
             invalid_type_error: 'El codigo del estudiante solo puede ser texto',
             required_error: 'El codigo del estudiante es requerido'
@@ -126,15 +128,15 @@ const studentSchema = z.object({
         .length(7, { message: 'El codigo del estudiante solo puede contener 7 digitos' })
         .refine((value) => /^[0-9]+$/.test(value), { message: 'El codigo del estudiante debe contener solo números' }),
 
-    email: z
+        email: z
         .string({
             invalid_type_error: 'El email del estudiante  solo puede ser texto',
             required_error: 'El email del estudiante es requerido'
         })
         .email({ message: 'El formato del email es incorrecto' })
         .regex(/ufps.edu.co$/, 'El email proporcionado no corresponde a la UFPS'),
-    
-    password: z
+
+        password: z
         .string({
             invalid_type_error: 'La contraseña solo puede ser texto',
             required_error: 'La contraseña es requerida'
@@ -142,14 +144,14 @@ const studentSchema = z.object({
         .min(10, { message: 'La contraseña es muy corta' })
         .max(25, { message: 'La contraseña excede la cant. maxima de caracteres' }),
 
-    tipo: z
+        tipo: z
         .string({
             invalid_type_error: 'El tipo de usuario solo puede ser texto',
             required_error: 'El tipo de usuario es requerido'
         })
         .refine((value) => value === 'Estudiante', { message: 'El tipo de usuario debe corresponder a Estudiante' }),
 
-    semestre: z
+        semestre: z
         .number({
             invalid_type_error: 'El semestre del estudiante debe ser un numero',
             required_error: 'El semestre del estudiante es requerido'
@@ -157,14 +159,36 @@ const studentSchema = z.object({
         .min(1, { message: 'El semestre del estudiante no debe ser 0 o negativo' })
         .max(10, { message: 'El semestre del estudiante no debe ser mayor a 10' }),
 
-    rol_id: z
+        rol_id: z
         .number({
             invalid_type_error: 'El identicador del rol debe ser un numero',
             required_error: 'El identificador del rol es requerido'
         })
         .min(1, { message: 'El identificador del rol no debe ser 0 o negativo' })
 
-}).strict();
+    }).partial(),
+
+    params: z.object({
+
+       id: z
+       .string({
+            required_error: 'El identificador es necesario'
+       }).regex(/^[0-9]+$/, 'Req no válido')
+
+    }).partial(),
+
+    query: z.object({
+
+        estado: z
+        .string({ 
+            invalid_type_error: 'El estado solo puede ser un valor textual',
+            required_error: 'El estado es requerido'
+        }).regex(/^(0|1)$/, "El formato de la query no coinicde")
+
+    }).partial()
+
+
+}).partial();
 
 
 // Esquema de inicio de sesión
@@ -195,12 +219,6 @@ const reqPassResetSchema = z.object({
 
 // Validación de esquemas
 
-export function validateStudentData(req, res, next){
-    const errors = validateData(studentSchema, req.body);
-    if (errors.length !== 0) return res.status(400).json({ error: errors });
-    next();
-}
-
 export function validateReqPassReset(req, res, next){
     const errors = validateData(reqPassResetSchema, req.body);
     if (errors.length !== 0) return res.status(400).json({ error: errors });
@@ -212,3 +230,11 @@ export function validateLoginData(req, res, next) {
     if (errors.length !== 0) return res.status(400).json({ error: errors });
     next();
 }
+
+export function validateStudentData(req, res, next){
+    const errors = validateData(studentSchema, req);
+    if (errors.length !== 0) return res.status(400).json({ error: errors });
+    next();
+}
+
+

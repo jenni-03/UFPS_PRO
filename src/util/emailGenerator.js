@@ -1,5 +1,6 @@
 import nodeMailer from 'nodemailer';
 import mailGen from 'mailgen';
+import logger from '../middlewares/logger.js';
 
 
 /** Función encargada de llevar a cabo el envio de las credenciales a los usuarios que aun no se encuentran registrados
@@ -61,7 +62,7 @@ const generateEmail = async (userName, userEmail, userPassword) => {
 
     // Enviamos el correo electronico
     await transporter.sendMail(message);
-    console.log('Mensaje enviado exitosamente');
+    logger.info('Mensaje de registro enviado exitosamente');
 
 };
 

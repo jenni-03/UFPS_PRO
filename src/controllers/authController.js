@@ -39,7 +39,7 @@ export const login = async (req, res, next) => {
             id: userFound.id,
             username: email,
             tipo: userFound.tipo
-        }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '35s' });
+        }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '15m' });
 
         // Creamos el token de refresco
         const refreshToken = jwt.sign(
@@ -117,7 +117,7 @@ export const refresh = (req, res) => {
                     tipo: foundUser.tipo
                 },
                 process.env.ACCESS_TOKEN_SECRET,
-                { expiresIn: '25s' }
+                { expiresIn: '15m' }
             );
 
             res.status(200).json({ accessToken });

@@ -19,7 +19,10 @@ const verifyJWT = async (req, res, next) => {
 
         if(!foundUser || !foundUser.estado) return res.status(401).json({ message: 'Acceso no autorizado' });
 
-        req.id = id;
+        req.user = {
+            id,
+            type: foundUser.tipo
+        };
         next();
 
     }catch(err){
