@@ -1,24 +1,24 @@
-const { Op } = require('sequelize');
-const Usuario = require('../models/Usuario');
-const password_generator = require('generate-password');
-const encryptPasswd= require('../util/encryptPassword');
-const generateCorreo = require('../util/emailGenerator');
-const bcrypt = require('bcrypt');
+import { Op } from 'sequelize';
+import Usuario from '../models/Usuario.js';
+import password_generator from 'generate-password';
+import encryptPasswd from '../util/encryptPassword.js';
+import generateCorreo from '../util/emailGenerator.js';
+import bcrypt from 'bcrypt';
 
 
 /* --------- getStudents function -------------- */
 
-const getStudents =  async (req, res) => {
+const getStudents =  async (req, res, next) => {
+
+    // Obtenemos el estado de los estudiantes a filtrar
+    const state = req.query.estado || true;
 
     try {
 
-        // Estado
-        const state = req.query.estado || true;
-
-        //Obtenemos los estudiantes
+        // Consultamos a los estudiantes
         const students = await Usuario.findAll({
             where: {
-                tipo: 'estudiante', 
+                tipo: 'Estudiante', 
                 estado: state
             },
             attributes: ['id', 'nombre', 'apellido', 'email', 'semestre', 'codigo', 'estado']
@@ -28,7 +28,7 @@ const getStudents =  async (req, res) => {
         res.status(200).json(students);
 
     } catch (error) {
-        return res.status(500).json({ error: `Error al obtener los estudiantes: ${error.message}` });
+        next(new Error(`Ocurrio un problema al obtener los estudiantes: ${error.message}`));
     }
     
 };
@@ -36,37 +36,37 @@ const getStudents =  async (req, res) => {
 
 /* --------- getStudentById function -------------- */
 
-const getStudentById = async (req, res) => {
+const getStudentById = async (req, res, next) => {
     
+    // Obtenemos el id del estudiante
+    const { id } = req.params;
+
     try {
 
-        //Obtenemos el id del estudiante
-        const {id} = req.params;
-
-        // Verificamos el id de entrada
-        const regexId = /^[0-9]+$/; // Expresión regular que controla solo la admición de numeros
-
-        if(!regexId.test(id)){
-            return res.status(400).json({error: 'id no valido'});
-        }
-
-        //Obtenemos el estudiante y verificamos su existencia
+        // Obtenemos el estudiante 
         const student = await Usuario.findOne({
             where: {
                 id,
-                rol_id: 2
+                tipo: "Estudiante"
             }
         });
 
-        if(!student){
-            return res.status(400).json({error: 'No se encuentra ningún estudiante asociado con el id especificado'});
+        if (!student){
+            return res.status(400).json({ error: 'No es posible identificar al estudiante especificado' });
         }
 
         // Respondemos al usuario
-        res.status(200).json(student);
+        res.status(200).json({
+            nombre: student.nombre,
+            apellido: student.apellido,
+            codigo: student.codigo,
+            email: student.email,
+            tipo: student.tipo,
+            estado: student.estado
+        });
 
     } catch (error) {
-        return res.status(500).json({ error: `Error al obtener el estudiante especificado: ${error.message}` });
+        next(new Error(`Ocurrio un problema al obtener la informacion del estudiante especificado: ${error.message}`));
     }
 
 };
@@ -74,53 +74,35 @@ const getStudentById = async (req, res) => {
 
 /* --------- updateStudentData function -------------- */
 
-const updateStudentData = async (req, res) => {
+const updateStudentData = async (req, res, next) => {
+
+    // Obtenemos el id del estudiante
+    const { id } = req.user;
+
+    // Obtenemos los datos a actualizar
+    const {nombre, apellido} = req.body; 
 
     try {
 
-        //Obtenemos el id del estudiante a actualizar
-        const {id} = req.params;
-
-        // Verificamos el id de entrada
-        const regexId = /^[0-9]+$/; // Expresión regular que controla solo la admición de numeros
-
-        if(!regexId.test(id)){
-            return res.status(400).json({error: 'id no valido'});
-        }
-
-        //Obtenemos el estudiante y verificamos su existencia
+        // Obtenemos el estudiante y verificamos su existencia
         const student = await Usuario.findOne({
             where: {
                 id,
-                rol_id: 2
+                tipo: "Estudiante"
             }
         });
-
-        if(!student){
-            return res.status(400).json({error: 'No se encuentra ningun estudiante asociado con el id especificado'});
-        }
-
-        // Obtenemos los datos a actualizar
-        const {nombre, apellido} = req.body;
-
-        // Validamos los datos obtenidos
-        const regexData = /^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/; // Validación de nombres y apellidos
-
-        if(!regexData.test(nombre) || !regexData.test(apellido)){
-            return res.status(400).json({error: 'La sintaxis de los datos ingresados es incorrecta'});
-        }
         
-        //Actualizamos el estudiante
+        // Actualizamos el estudiante
         await student.update({
             nombre,
             apellido
         });
 
-        //Respondemos a la petición
-        res.status(200).json(student);
+        // Respondemos a la petición
+        res.status(200).json({ message: "Actualización realizada correctamente" });
 
     } catch (error) {
-        return res.status(500).json({ error: `Error al actualizar los datos: ${error.message}` });
+        next(new Error(`Ocurrio un problema al actualizar el estudiante especificado: ${error.message}`));
     }
 }
 
@@ -130,24 +112,12 @@ const updateStudentData = async (req, res) => {
 
 /* --------- createStudent function -------------- */
 
-const createStudent =  async (req, res) => {
+const createStudent =  async (req, res, next) => {
+
+    // Obtenemos los datos de el estudiante a crear
+    const {nombre, apellido, codigo, email, semestre} = req.body; 
 
     try {
-
-        // Obtenemos los datos de el estudiante a crear
-        const {nombre, apellido, codigo, email, semestre} = req.body;
-
-        // Validamos los datos obtenidos
-        if(!nombre || !apellido || !codigo || !email || !semestre){
-            return res.status(400).json({error: 'Todos los campos son requeridos'});
-        } 
-
-        const regexNum = /^[0-9]+$/;
-        const regexData = /^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/;
-
-        if(!regexData.test(nombre) || !regexData.test(apellido) || !regexNum.test(codigo) || !regexNum.test(semestre)){
-            return res.status(400).json({error: 'La sintaxis de los datos ingresados es incorrecta'});
-        }
 
         //Validamos que el código y email sea único
         const studentExist = await Usuario.findOne({
@@ -155,28 +125,12 @@ const createStudent =  async (req, res) => {
                 [Op.or]: [
                     {codigo},
                     {email}
-                ],
-                tipo: 'estudiante'
+                ]
             }
         });
 
         if(studentExist){
-            return res.status(400).json({error: 'El codigo y email del estudiante deben ser unicos'});
-        }
-
-        // Validamos la existencia del estudiante
-        const estudianteExist = await Usuario.findOne({
-            where: {
-                nombre,
-                apellido,
-                email,
-                codigo,
-                tipo: 'estudiante'
-            }
-        });
-
-        if(estudianteExist){
-            return res.status(400).json({error: 'El estudiante ya se encuentra registrado'});
+            return res.status(400).json({error: 'El usuario ya se encuentra registrado'});
         }
 
         // Generamos la contraseña
@@ -195,7 +149,7 @@ const createStudent =  async (req, res) => {
             codigo,
             email,
             password: hashedPassword,
-            tipo: 'estudiante',
+            tipo: 'Estudiante',
             semestre,
             rol_id: 2
         });
@@ -204,10 +158,10 @@ const createStudent =  async (req, res) => {
         await generateCorreo(`${nombre} ${apellido}`, email, password);
 
         // Respondemos al usuario
-        res.status(200).json(student);
+        res.status(200).json({ message: 'Usuario creado exitosamente' });
 
     } catch (error) {
-        return res.status(500).json({error: `Error al crear el estudiante: ${error.message}`});
+        next(new Error(`Ocurrio un problema al intentar crear el estudiante: ${error.message}`));
     }
 
 };
@@ -215,19 +169,15 @@ const createStudent =  async (req, res) => {
 
 /* --------- updateStudentDir function -------------- */
 
-const updateStudentDataDir = async (req, res) => {
+const updateStudentDataDir = async (req, res, next) => {
+
+    //Obtenemos el id del estudiante a actualizar
+    const { id } = req.params;
+
+    // Obtenemos los datos a actualizar
+    const {nombre, apellido, codigo, email, semestre, estado} = req.body; 
 
     try {
-
-        //Obtenemos el id del estudiante a actualizar
-        const {id} = req.params;
-
-        // Verificamos el id de entrada
-        const regexNum = /^[0-9]+$/; // Expresión regular que controla solo la admición de numeros
-
-        if(!regexNum.test(id)){
-            return res.status(400).json({error: 'id no valido'});
-        }
 
         // Obtenemos el estudiante y verificamos su existencia
         const student = await Usuario.findOne({
@@ -241,16 +191,6 @@ const updateStudentDataDir = async (req, res) => {
             return res.status(400).json({error: 'No se encuentra ningun estudiante asociado con el id especificado'});
         }
 
-        // Obtenemos los datos a actualizar
-        const {nombre, apellido, codigo, email, semestre, estado} = req.body;
-
-        // Validamos los datos obtenidos
-        const regexData = /^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/;
-
-        if(!regexData.test(nombre) || !regexData.test(apellido) || !regexNum.test(codigo) || !regexNum.test(semestre)){
-            return res.status(400).json({error: 'La sintaxis de los datos ingresados es incorrecta'});
-        }
-
         // Comprobamos que no exista un estudiante con el mismo codigo o email
         const studentExist = await Usuario.findOne({
             where: {
@@ -262,7 +202,7 @@ const updateStudentDataDir = async (req, res) => {
         })
 
         if(studentExist && studentExist.nombre.toLowerCase() !== student.nombre.toLowerCase()){
-            return res.status(400).json({error: "El codigo y email de el estudiante debe ser unico"});
+            return res.status(400).json({error: "El codigo y email de el estudiante deben ser unico"});
         }
 
         // Actualizamos el estudiante
@@ -276,30 +216,30 @@ const updateStudentDataDir = async (req, res) => {
         });
 
         // Respondemos a la petición
-        return res.status(200).json(student);
+        return res.status(200).json({ message: 'Estudiante actualizado correctamente' });
 
     } catch (error) {
-        return res.status(500).json({error: `Error al actualizar los datos del estudiante: ${error.message}`})
+        next(new Error(`Ocurrio un problema al intentar actualizar el estudiante: ${error.message}`));
     }
 }
 
 
 /* --------- getDirectors function -------------- */
 
-const getDirectors =  async (req, res) => {
+const getDirectors =  async (req, res, next) => {
 
     try {
 
         //Obtenemos los directores
         const directors = await Usuario.findAll({
-            where: {tipo: 'director'}
+            where: { tipo: 'Director' }
         })
 
         // Respondemos al usuario
         res.status(200).json(directors);
 
     } catch (error) {
-        return res.status(500).json({error: `Error al obtener los directores: ${error.message}`});
+        next(new Error(`Ocurrio un problema al obtener los datos de los directores: ${error.message}`));
     }
 };
 
@@ -308,17 +248,10 @@ const getDirectors =  async (req, res) => {
 
 const getDirectorById = async (req, res) => {
 
+    //Obtenemos el id del director
+    const {id} = req.params;
+
     try {
-
-        //Obtenemos el id del director
-        const {id} = req.params;
-
-        // Verificamos el id de entrada
-        const regexId = /^[0-9]+$/; // Expresión regular que controla solo la admición de numeros
-
-        if(!regexId.test(id)){
-            return res.status(400).json({error: 'id no valido'});
-        }
 
         // Obtenemos el director y validamos su existencia
         const director = await Usuario.findOne({
@@ -336,7 +269,7 @@ const getDirectorById = async (req, res) => {
         res.status(200).json(director);
 
     } catch (error) {
-        return res.status(500).json({error: `Error al obtener un director por id: ${error.message}`});
+        next(new Error(`Ocurrio un problema al obtener los datos del director: ${error.message}`));
     }
 };
 
@@ -503,8 +436,8 @@ const updatePassword = async (req, res) => {
 
 };
 
+const controller = { 
 
-module.exports = {
     getStudents,
     getStudentById,
     updateStudentData,
@@ -515,4 +448,7 @@ module.exports = {
     updateDirector,
     updatePhotoDirector,
     updatePassword
+
 }
+
+export default controller;

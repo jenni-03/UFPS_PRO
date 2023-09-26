@@ -3,7 +3,13 @@ import mailGen from 'mailgen';
 import crypto from 'crypto';
 import PasswordReset from '../models/PasswordReset.js';
 import bcrypt from 'bcrypt';
-import {email_address, email_password} from '../config.js' // -> revisar
+import configuration from '../config.js';
+import logger from '../middlewares/logger.js';
+import dayjs from 'dayjs';
+
+
+// Obtenemos las credenciales del correo
+const { email_address, email_password } = configuration;
 
 
 /** Función encargada de el envio de correo para el restablecimiento de contraseña de un 
@@ -18,12 +24,10 @@ const sendResetEmail = async (user, redirectURL) => {
         // Generamos la cadena de reseteo
         const resetString = crypto.randomBytes(64).toString('hex') + id;
 
-        // Eliminamos todos los registros de PasswordReset correspondientes a ese id
-        await PasswordReset.destroy({
-            where:{
-                usuario_id: id
-            }
-        });
+        const hashedString = await hashResetString(id, resetString);
+
+        // Creamos o actualizamos el registro de restablecimiento
+        updateRecordReset(id, hashedString);
 
         // Crear un objeto de configuración con las credenciales
         let config = {
@@ -39,48 +43,8 @@ const sendResetEmail = async (user, redirectURL) => {
         // Creamos el objeto transportador
         const transporter = nodeMailer.createTransport(config);
 
-        // Creamos la estructura del email
-        const mailGenerator = new mailGen({
-            theme: "default",
-            product: {
-                name: "UFPS_PRO",
-                link: "https://ww2.ufps.edu.co", 
-                copyright: 'Copyright © 2023 UFPS. All rights reserved.',
-                logo: 'https://divisist2.ufps.edu.co/public/documentos/63b79750fa95f00107f1322ae668405d.png'
-            }
-        });
-
-        const response = {
-            body: {
-                greeting: 'Hola',
-                name: `${nombre} ${apellido}`,
-                action: {
-                    instructions: 'Estamos al tanto de tu solicitud de restablecimiento de contraseña, para continuar con ella, haz click en el botón ubicado en la parte inferior:',
-                    button: {
-                        color: '#eb343d',
-                        text: 'Restablecer contraseña',
-                        link: `${redirectURL}/${id}/${resetString}`
-                    }
-                },
-                outro: "Recuerda que este link expirará en 60 minutos",
-                signature: 'Atentamente, el equipo de desarrollo de'
-            }
-        }
-
-        // Hasheamos la cadena de restablecimiento
-        const saltRounds = await bcrypt.genSalt(11);
-        const hashedString = await bcrypt.hash(resetString, saltRounds);
-
-        // Creamos un nuevo PasswordReset
-        const newPasswordReset = await PasswordReset.create({
-            uniqueString: hashedString,
-            createdAt: Date.now(),
-            expiresAt: Date.now() + 3600000,
-            usuario_id: id
-        })
-
-        // Generamos un HTML del email con el cuerpo proporcionado
-        const emailBody = mailGenerator.generate(response);
+        // Creamos la estructura del email y generamos el HTML
+        const emailBody = createEmailEstructure(id, nombre, apellido, redirectURL, resetString);
 
         // Configuramos el origen y destinatario
         const message = {
@@ -92,11 +56,92 @@ const sendResetEmail = async (user, redirectURL) => {
 
         // Enviamos el correo electronico
         await transporter.sendMail(message);
-        console.log('Mensaje enviado exitosamente');
+        logger.info('Email de restablecimiento enviado correctamente');
+        
 
     }catch(error){
         throw new Error(`Error al enviar email de restablecimiento: ${error.message}`);
     }
+
+}
+
+
+const hashResetString = async (id, resetString) => {
+
+    // Hasheamos la cadena de restablecimiento
+    const saltRounds = await bcrypt.genSalt(11);
+    const hashed = bcrypt.hash(resetString, saltRounds);
+
+    return hashed; 
+    
+}
+
+
+const updateRecordReset = async (id, hashedString) => {
+
+    // Verificamos si el usuario ya posee un registro de restablecimiento
+    const existingReset = await PasswordReset.findOne({
+        where: {
+            usuario_id: id
+        }
+    });
+
+    if (existingReset){
+
+        // Actualizamos el actual
+        existingReset.uniqueString = hashedString;
+        existingReset.created_At = dayjs().toDate();
+        existingReset.expires_At = dayjs().add(1, 'hours').toDate();
+        existingReset.expired = false;
+
+        await existingReset.save();
+
+    }else{
+
+        // Creamos un nuevo registro de restablecimiento
+        await PasswordReset.create({
+            uniqueString: hashedString,
+            created_At: dayjs().toDate(),
+            expires_At: dayjs().add(1, 'hours').toDate(),
+            expired: false,
+            usuario_id: id
+        });
+
+    }
+
+}
+
+
+const createEmailEstructure = (id, nombre, apellido, redirectURL, resetString) => {
+
+    const mailGenerator = new mailGen({
+        theme: "default",
+        product: {
+            name: "UFPS_PRO",
+            link: "https://ww2.ufps.edu.co", 
+            copyright: 'Copyright © 2023 UFPS. All rights reserved.',
+            logo: 'https://divisist2.ufps.edu.co/public/documentos/63b79750fa95f00107f1322ae668405d.png'
+        }
+    });
+
+    const response = {
+        body: {
+            greeting: 'Hola',
+            name: `${nombre} ${apellido}`,
+            action: {
+                instructions: 'Estamos al tanto de tu solicitud de restablecimiento de contraseña, para continuar con ella, haz click en el botón ubicado en la parte inferior:',
+                button: {
+                    color: '#eb343d',
+                    text: 'Restablecer contraseña',
+                    link: `${redirectURL}/${id}/${resetString}`
+                }
+            },
+            outro: "Recuerda que este link expirará en 60 minutos",
+            signature: 'Atentamente, el equipo de desarrollo de'
+        }
+    }
+
+    return mailGenerator.generate(response);
 
 }
 

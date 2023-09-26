@@ -3,6 +3,8 @@ import Rol from '../models/Rol.js';
 import sequelize from '../database/db.js';
 import bcrypt from 'bcrypt';
 import logger from '../middlewares/logger.js';
+import validateData from './validateData.js';
+import { directorSchema } from '../schemas/userSchema.js';
 
 // Función encargada de crear el usuario administrador
 const createAdminUser = async () => {
@@ -25,22 +27,45 @@ const createAdminUser = async () => {
                     where: {nombre: 'Administrador'}
                 });
 
-                const getSalt = await bcrypt.genSalt(11);
-                const hashed = await bcrypt.hash('Director1234', getSalt);
+                // Validamos los datos
+                const newAdmin = {
 
-                // Creamos el usuario
-                const user  = await Usuario.create({
                     nombre: 'Jaider',
                     apellido: 'Oliveros',
                     codigo: '1152031',
                     email: 'jaidergustavoolmo@ufps.edu.co',
-                    password: hashed,
-                    tipo: 'director',
+                    tipo: 'Director',
+                    password: 'Director1234',
                     telefono: '5555555',
                     direccion: 'Mi hogar mi casa al lado de mi vecino',
                     documento: '1004758624',
                     celular: '3135687982',
                     rol_id: adminRole.id
+                }
+
+                const getSalt = await bcrypt.genSalt(11);
+                const hashed = await bcrypt.hash('Director1234', getSalt);
+
+                const errors = validateData(directorSchema, newAdmin);
+
+                // Reasignamos la contraseña 
+                newAdmin.password = hashed;
+
+                if (errors.length > 0) throw new Error(errors.join(', '));
+
+                // Creamos el usuario - en caso de que todo haya ido bien
+                const user  = await Usuario.create({
+                    nombre: newAdmin.nombre,
+                    apellido: newAdmin.apellido,
+                    codigo: newAdmin.codigo,
+                    email: newAdmin.email,
+                    password: newAdmin.password,
+                    tipo: newAdmin.tipo,
+                    telefono: newAdmin.telefono,
+                    direccion: newAdmin.direccion,
+                    documento: newAdmin.documento,
+                    celular: newAdmin.celular,
+                    rol_id: newAdmin.rol_id
                 }, {transaction: t});
 
                 logger.info('Usuario administrador creado correctamente');

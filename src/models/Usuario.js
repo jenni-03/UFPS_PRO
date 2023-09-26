@@ -15,9 +15,6 @@ const User = sequelize.define('usuarios', {
         type: DataTypes.STRING,
         allowNull: false,
         validate: {
-            notEmpty:{
-                msg: "El nombre no puede ser vacio"
-            },
             len:{
                 args: [3, 45],
                 msg: "El nombre solo ha de contener entre 3 y 45 caracteres"
@@ -28,9 +25,6 @@ const User = sequelize.define('usuarios', {
         type: DataTypes.STRING,
         allowNull: false,
         validate: {
-            notEmpty:{
-                msg: "El apellido no puede ser vacio"
-            },
             len:{
                 args: [3, 55],
                 msg: "El apellido solo ha de contener entre 3 y 55 caracteres"
@@ -43,18 +37,6 @@ const User = sequelize.define('usuarios', {
         unique: {
             name: 'users_code',
             msg: "El código propocionado ya existe"
-        },
-        validate:{
-            notEmpty:{
-                msg: "El código no puede ser vacio"
-            },
-            isNumeric: {
-                msg: "El código solo ha de contener números"
-            },
-            len: {
-                args: 7,
-                msg: "El código solo puede contener 7 digitos"
-            }
         }
     },
     email: {
@@ -63,32 +45,14 @@ const User = sequelize.define('usuarios', {
         unique: {
             name: 'users_email',
             msg: "El email proporcionado ya ha sido registrado"
-        },
-        validate:{
-            notEmpty:{
-                msg: "El email no puede ser vacio"
-            },
-            isEmail: {
-                args: true,
-                msg: "El correo debe corresponder con una dirección válida"
-            }
         }
     },
     password: {
         type: DataTypes.STRING,
-        allowNull: false,
-        validate: {
-            notEmpty:{
-                msg: "La contraseña no puede ser vacia"
-            },
-            len: {
-                args: [10, 65],
-                msg: "La contraseña debe de tener 10 caracteres minimo"
-            }
-        }
+        allowNull: false
     },
     tipo: {
-        type: DataTypes.ENUM('director', 'estudiante'),
+        type: DataTypes.ENUM('Director', 'Estudiante'),
         allowNull: false
     },
     // Director data
@@ -96,9 +60,6 @@ const User = sequelize.define('usuarios', {
         type: DataTypes.STRING,
         allowNull: true,
         validate: {
-            notEmpty:{
-                msg: "El Telefono no puede ser vacio"
-            },
             isNumeric: {
                 msg: "El telefono solo ha de contener números"
             },
@@ -112,9 +73,6 @@ const User = sequelize.define('usuarios', {
         type: DataTypes.STRING,
         allowNull: true,
         validate: {
-            notEmpty:{
-                msg: "La direccion no puede ser vacia"
-            },
             len: {
                 args: [20, 60],
                 msg: "La dirección ha de tener entre 20 y 60 caracteres"
@@ -129,9 +87,6 @@ const User = sequelize.define('usuarios', {
             msg: "Document already registered"
         },
         validate: {
-            notEmpty:{
-                msg: "El documento no puede ser vacio"
-            },
             isNumeric: {
                 msg: "El documento solo ha de contener números"
             },
@@ -145,9 +100,6 @@ const User = sequelize.define('usuarios', {
         type: DataTypes.STRING,
         allowNull: true,
         validate: {
-            notEmpty:{
-                msg: "El celular no puede ser vacio"
-            },
             isNumeric: {
                 msg: "El celular solo ha de contener números"
             }
@@ -164,17 +116,6 @@ const User = sequelize.define('usuarios', {
         validate: {
             notEmpty:{
                 msg: "El semestre no puede ser vacio"
-            },
-            isNumeric: {
-                msg: "El semestre solo ha de contener números"
-            },
-            min: {
-                args: 1,
-                msg: "El semestre debe ser mayor que 0"
-            },
-            max: {
-                args: 10,
-                msg: "El semestre debe ser menor o igual a 10"
             }
         }
     },

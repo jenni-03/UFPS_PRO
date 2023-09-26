@@ -1,24 +1,20 @@
-const Usuario = require('../models/Usuario');
-const Rol = require('../models/Rol');
-const jwt = require('jsonwebtoken');
-const bcrypt = require('bcrypt');
-const User = require('../models/Usuario');
-const sendResetEmail = require('../util/resetEmail');
-const PasswordReset = require('../models/PasswordReset');
+import Usuario from '../models/Usuario.js';
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcrypt';
+import User from '../models/Usuario.js';
+import sendResetEmail from '../util/resetEmail.js';
+import PasswordReset from '../models/PasswordReset.js';
+import dayjs from 'dayjs';
 
 
 /* --------- Login function -------------- */
 
-const login = async (req, res) => {
+export const login = async (req, res, next) => {
 
     try{
 
         // Obtenemos las credenciales del usuario
         const {email, password} = req.body;
-
-        if(!email || !password){
-            return res.status(400).json({message: 'Todos los campos son requeridos'});
-        }
 
         // Verificamos la existencia del usuario
         const userFound = await Usuario.findOne({
@@ -28,53 +24,52 @@ const login = async (req, res) => {
         });
 
         if(!userFound || !userFound.estado){
-            return res.status(401).json({message: 'Credenciales incorrectas'});
+            return res.status(401).json({ error: 'Credenciales incorrectas' });
         }
 
         // Comprobamos la contraseña
         const match = await bcrypt.compare(password, userFound.password);
 
         if(!match){
-            return res.status(401).json({message: 'Credenciales incorrectas'});
+            return res.status(401).json({ error: 'Credenciales incorrectas' });
         }
 
         // Creamos el token de acceso
         const accessToken = jwt.sign({
+            id: userFound.id,
             username: email,
             tipo: userFound.tipo
-        }, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '1d'});
+        }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '15m' });
 
         // Creamos el token de refresco
         const refreshToken = jwt.sign(
             {
+                id: userFound.id,
                 username: email,
                 tipo: userFound.tipo
             },
             process.env.REFRESH_TOKEN_SECRET,
-            {expiresIn: '1d'}
+            { expiresIn: '5d' }
         );
 
         // Creamos una cookie para almacenar el token de refresco
         res.cookie('jwt', refreshToken, {
             httpOnly: true,
-            secure: true,
+            secure: false,
             sameSite: 'Lax',
-            maxAge: 24 * 60 * 1000
+            maxAge: 5 * 24 * 60 * 1000
         });
-
-        // Obtnemos el rol del usuario
-        const userRole = await Rol.findByPk(userFound.rol_id);
 
         // Enviamos el token de acceso al usuario
         res.json({
             username: email,
             name: userFound.nombre,
-            role: userRole.nombre,
+            role: userFound.tipo,
             accessToken
         });
 
     }catch(error){
-        return res.status(500).json({message: `Error al intentar iniciar sesión: ${error.message}`});
+        next(new Error(`Ocurrio un problema al intentar iniciar sesion: ${error.message}`));
     }
 
 };
@@ -82,13 +77,14 @@ const login = async (req, res) => {
 
 /* --------- Refresh function -------------- */
 
-const refresh = async (req, res) => {
+export const refresh = (req, res) => {
 
     // Recuperamos la cookie
     const cookies = req.cookies;
 
     if(!cookies?.jwt){
-        return res.status(401).json({message: 'Acceso no autorizado'});
+        req.log.warn('No se encontro token de refresco adjunto');
+        return res.status(401).json({ error: 'Acceso no autorizado' });
     }
 
     // Obtenemos el token de refresco
@@ -98,30 +94,33 @@ const refresh = async (req, res) => {
     jwt.verify(
         refreshToken,
         process.env.REFRESH_TOKEN_SECRET,
-        (err, user) => {
+        async (err, user) => {
 
-            if(err) return res.status(403).json({message: 'Acceso prohibido'});
+            if(err){ 
+                req.log.warn("Token de refresco no proporcionado o token no valido");
+                return res.status(403).json({ error: 'Acceso prohibido' }) 
+            };
 
             // Verificamos los datos del payload
-            const foundUser = Usuario.findOne({
-                where: {
-                    email: user.username
-                }
-            });
+            const foundUser = await Usuario.findByPk(user.id);
 
-            if(!foundUser) return res.status(401).json({ message: 'Acceso no autorizado' });
+            if(!foundUser) {
+                req.log.warn("Token no valido");
+                return res.status(401).json({ error: 'Acceso no autorizado' });
+            }
 
-            // Volvemos a crar el token de acceso
+            // Volvemos a crear el token de acceso
             const accessToken = jwt.sign(
                 {
+                    id: foundUser.id,
                     username: foundUser.email,
                     tipo: foundUser.tipo
                 },
                 process.env.ACCESS_TOKEN_SECRET,
-                {expiresIn: '25m'}
+                { expiresIn: '15m' }
             );
 
-            res.status(200).json({accessToken});
+            res.status(200).json({ accessToken });
 
         }
     );
@@ -131,27 +130,28 @@ const refresh = async (req, res) => {
 
 /* --------- Logout function -------------- */
 
-const logout = (req, res) => {
+export const logout = (req, res) => {
 
     // Obtengo las cookies
     const cookies = req.cookies;
 
     // Verfico que la cookie que almacena el token de refresco existe
     if(!cookies?.jwt){
-        return res.status(401).json({message: 'Acceso no autorizado'});
+        req.log.warn('Token de refresco no proporcionado');
+        return res.status(401).json({ error: 'Acceso no autorizado' });
     }
 
     // Elimino la cookie
     res.clearCookie('jwt', { httpOnly: true, sameSite: 'Lax', secure: false });
 
-    res.status(200).json({message: 'Sesión terminada correctamente!'});
+    res.status(200).json({ message: 'Sesión terminada correctamente!' });
 
 };
 
 
 /* --------- request_password_reset function -------------- */
 
-const requestPasswordRst = async (req, res) => {
+export const requestPasswordRst = async (req, res, next) => {
 
     try{
 
@@ -166,7 +166,7 @@ const requestPasswordRst = async (req, res) => {
         });
 
         if(!user || !user.estado){
-            return res.status(400).json({error: 'El email proporcionado no esta autorizado para solicitar un cambio de contraseña'});
+            return res.status(400).json({ error: 'El email proporcionado no esta autorizado para solicitar un cambio de contraseña' });
         }
 
         // Enviamos el email de reset
@@ -175,7 +175,7 @@ const requestPasswordRst = async (req, res) => {
         res.status(200).json({message: 'Correo de restablecimiento de contraseña enviado correctamente'});
 
     }catch(err){
-        return res.status(500).json({error: `Ocurrio un error al verificar el email ${err.message}`});
+        next(new Error(`Ocurrio un problema al verificar el email ${err}`));
     }
 
 };
@@ -183,7 +183,7 @@ const requestPasswordRst = async (req, res) => {
 
 /* --------- password_reset function -------------- */
 
-const resetPassword = async (req, res) => {
+export const resetPassword = async (req, res, next) => {
 
     try{
 
@@ -198,18 +198,15 @@ const resetPassword = async (req, res) => {
         });
 
         if(!password_reset){
-            return res.status(400).json({error: `No existe una petición de cambio de contraseña por parte del usuario`});
+            return res.status(400).json({ error: `No existe una petición de cambio de contraseña por parte del usuario` });
         }
 
         // Verificamos que el registro de la petición de cambio sea aun valido
-        const {expiresAt} = password_reset;
+        const { expires_At } = password_reset;
 
-        if(expiresAt < Date.now()){
+        if(expires_At < dayjs().toDate() || password_reset.expired){
             
-            // Eliminamos el registro
-            await password_reset.destroy();
-
-            return res.status(400).json({error: `El link de restablecimiento ha expirado`});
+            return res.status(400).json({ error: `El link de restablecimiento ha expirado` });
 
         }
 
@@ -217,7 +214,7 @@ const resetPassword = async (req, res) => {
         const match = await bcrypt.compare(resetString, password_reset.uniqueString);
 
         if(!match){
-            return res.status(400).json({error: 'La cadena de restablecimiento no coincide'});
+            return res.status(400).json({ error: 'La cadena de restablecimiento no coincide' });
         }
 
         // Volvemos a encriptar la nueva contraseña
@@ -232,23 +229,16 @@ const resetPassword = async (req, res) => {
                 id: user_id
             }
         });
-        
-        // Una vez actualizada la contraseña del usuario, eliminamos el registro
-        await password_reset.destroy();
+
+        // Inhabilitamos el registro de restablecimiento
+        password_reset.expired = true;
+        await password_reset.save();
 
         // Respondemos al usuario
-        res.status(200).json({message: 'Contraseña restablecida correctamente'});
+        res.status(200).json({ message: 'Contraseña restablecida correctamente' });
 
     }catch(err){
-        return res.status(500).json({error: `Error al intentar restablecer la contraseña del usuario: ${err.message}`});
+        next(new Error(`Ocurrio un problema al restablecer la contrasenia del usuario ${err.message}`));
     }
 
-}
-
-module.exports = {
-    login,
-    refresh,
-    logout,
-    requestPasswordRst,
-    resetPassword
 }

@@ -1,46 +1,44 @@
 import jwt from 'jsonwebtoken';
-import Usuario from '../models/Usuario';
+import Usuario from '../models/Usuario.js';
 
 
 /** Middleware encargado de la verficicación del token de acceso de un usuario  */
 
-const verifyJWT = (req, res, next) => {
+const verifyJWT = async (req, res, next) => {
 
-    // Obtenemos el encabezado de autorización
-    const authHeader = req.headers.authorization || req.headers.Authorization;
+    try{
 
-    // Verificar el contenido
-    if(!authHeader?.startsWith('Bearer')) {
-        return res.status(401).json({message: 'Accceso no autorizado'});
-    }
+        // Verificamos el token
+        const { id } = jwt.verify(
+            req.token,
+            process.env.ACCESS_TOKEN_SECRET
+        )
 
-    // Obtenemos el token de acceso
-    const token = authHeader.split(' ')[1];
+        // Verificamos los datos del payload
+        const foundUser = await Usuario.findByPk(id);
 
-    // Verificamos el token
-    jwt.verify(
-        token,
-        process.env.ACCESS_TOKEN_SECRET,
-        async (err, user) => {
+        if(!foundUser || !foundUser.estado) return res.status(401).json({ message: 'Acceso no autorizado' });
 
-            if(err) {
-                return res.status(403).json({message: 'Accceso prohibido'});
-            }
+        req.user = {
+            id,
+            type: foundUser.tipo
+        };
+        next();
 
-            // Verificamos los datos del payload
-            const foundUser = await Usuario.findOne({
-                where: {
-                    email: user.username
-                }
-            });
+    }catch(err){
 
-            if(!foundUser || !foundUser.estado) return res.status(401).json({ message: 'Acceso no autorizado' });
-
-            req.user = user;
-            next();
-
+        
+        // Manejamos los posibles errores
+        if(err.name === 'JsonWebTokenError') {
+            return res.status(401).json({ error: 'Token inválido' });
         }
-    );
+        if(err.name === 'TokenExpiredError') {
+            return res.status(401).json({ error: 'Token expirado' });
+        }
+        
+        next(new Error(`Error de verificación de token: ${err.message}`));
+
+    }
 
 };
 

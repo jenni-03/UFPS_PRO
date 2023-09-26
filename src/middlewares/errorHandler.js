@@ -1,11 +1,11 @@
 //const {logEvents} = require('./logger');
-const multer = require('multer');
+//const multer = require('multer');
 
 
 // Middleware encargado del manejo de errores
 const errorHandler = (err, req, res, next) => {
 
-    if (err instanceof multer.MulterError) {
+    /*if (err instanceof multer.MulterError) {
 
         // Error de Multer
         if (err.code === 'LIMIT_FILE_SIZE') {
@@ -15,15 +15,14 @@ const errorHandler = (err, req, res, next) => {
         // Otros errores de Multer
         return res.status(400).json({ error: `Error al cargar el archivo: ${err}` });
 
-    } else if (err) {
-        
-        // Definimos el contenido del log
-        //logEvents(`${err.name}: ${err.message}\t${req.method}\t${req.url}\t${req.headers.origin}`, 'errLog.log');
+    }*/
+    
+    if (err) {
 
-        console.error(err.stack);
+        req.log.error(err.stack);
 
         // Definimos el error a mostrar
-        const status = res.statusCode ? res.statusCode : 500;
+        const status = err.status || 500;
 
         res.status(status);
 
@@ -36,6 +35,4 @@ const errorHandler = (err, req, res, next) => {
 };
 
 
-module.exports = {
-    errorHandler
-}
+export default errorHandler;
