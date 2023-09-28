@@ -16,10 +16,10 @@ import './database/associations.js';
 // Importar Rutas de la API
 import authRoutes from './routes/auth.routes.js';
 import userRoutes from './routes/user.routes.js';
-/*import preguntasRoutes from './routes/preguntas.routes.js';
+//import preguntasRoutes from './routes/preguntas.routes.js';
 import competenciaRoutes from './routes/competencia.routes.js';
 import categoriaRoutes from './routes/categoria.routes.js';
-import pruebaRoutes from './routes/prueba.routes.js';
+/*import pruebaRoutes from './routes/prueba.routes.js';
 import convocatoriaRoutes from './routes/convocatoria.routes.js';*/
 
 // Inicializar el contexto principal
@@ -80,10 +80,10 @@ app.use(pino_http({
 // Rutas
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
-/*app.use('/api/question', preguntasRoutes);
+//app.use('/api/question', preguntasRoutes);
 app.use('/api/competencia', competenciaRoutes);
 app.use('/api/categoria', categoriaRoutes);
-app.use('/api/prueba', pruebaRoutes);
+/*app.use('/api/prueba', pruebaRoutes);
 app.use('/api/convocatoria', convocatoriaRoutes);*/
 
 

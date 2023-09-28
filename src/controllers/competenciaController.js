@@ -1,5 +1,5 @@
-const Competencia = require('../models/Competencia');
-const Categoria = require('../models/Categoria');
+import Competencia from '../models/Competencia.js';
+import Categoria from '../models/Categoria.js';
 
 
 /* --------- getCompetencias function -------------- */
@@ -118,25 +118,10 @@ const getCompetenciaById = async (req, res) => {
 
 const createCompetencia = async (req, res) => {
 
+    // Obtenemos los datos de la competencia a crear
+    const {nombre, descripcion} = req.body;
+
     try{
-
-        // Obtenemos los datos de la competencia a crear
-        const {nombre, descripcion} = req.body;
-
-        // Validamos los datos obtenidos
-        if(!nombre || !descripcion){
-            return res.status(400).json({error: 'Todos los campos son requeridos'});
-        }
-
-        if(typeof nombre !== 'string' || typeof descripcion !== 'string'){
-            return res.status(400).json({error: 'El nombre y la descripción deben ser texto'});
-        }
-
-        const regex = /^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/; // Expresión regular que controla solo la admición de caracteres comunes
-
-        if(!regex.test(nombre)){
-            return res.status(400).json({error: 'El nombre no puede contener números o caracteres especiales'});
-        }
 
         // Comprobamos que el nombre sea unico 
         const compFound = await Competencia.findOne({
@@ -243,10 +228,14 @@ const updateCompetencia = async (req, res) => {
 };
 
 
-module.exports = {
+const controller = {
+
     getCompetencias,
     getCompetenciaById,
     createCompetencia,
     updateCompetencia,
     getCategoriasCompetencia
+
 }
+
+export default controller;

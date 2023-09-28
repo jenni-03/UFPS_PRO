@@ -6,6 +6,29 @@ import generateCorreo from '../util/emailGenerator.js';
 import bcrypt from 'bcrypt';
 
 
+/* --------- getProfile function -------------- */
+
+const getProfile = async (req, res, next) => {
+
+    // Obtenemos el identificador del usuario 
+    const { id } = req.user;
+
+    try{
+
+        // Buscamos el usuario
+        const existUser = await Usuario.findByPk(id, {
+            attributes: { exclude: ['password', 'rol_id', 'estado'] }
+        });
+
+        return res.status(200).json(existUser);
+
+    }catch(error){
+        next(new Error(`Ocurrio un problema al obtener el perfil del usuario: ${error.message}`));
+    }
+
+};
+
+
 /* --------- getStudents function -------------- */
 
 const getStudents =  async (req, res, next) => {
@@ -21,7 +44,7 @@ const getStudents =  async (req, res, next) => {
                 tipo: 'Estudiante', 
                 estado: state
             },
-            attributes: ['id', 'nombre', 'apellido', 'email', 'semestre', 'codigo', 'estado']
+            attributes: ['id', 'nombre', 'apellido', 'email', 'estado']
         });
 
         // Respondemos al usuario
@@ -48,7 +71,8 @@ const getStudentById = async (req, res, next) => {
             where: {
                 id,
                 tipo: "Estudiante"
-            }
+            },
+            attributes: ['nombre', 'apellido', 'email', 'semestre', 'codigo', 'estado']
         });
 
         if (!student){
@@ -56,14 +80,7 @@ const getStudentById = async (req, res, next) => {
         }
 
         // Respondemos al usuario
-        res.status(200).json({
-            nombre: student.nombre,
-            apellido: student.apellido,
-            codigo: student.codigo,
-            email: student.email,
-            tipo: student.tipo,
-            estado: student.estado
-        });
+        res.status(200).json(student);
 
     } catch (error) {
         next(new Error(`Ocurrio un problema al obtener la informacion del estudiante especificado: ${error.message}`));
@@ -201,7 +218,7 @@ const updateStudentDataDir = async (req, res, next) => {
             }
         })
 
-        if(studentExist && studentExist.nombre.toLowerCase() !== student.nombre.toLowerCase()){
+        if(studentExist && studentExist.id !== student.id){
             return res.status(400).json({error: "El codigo y email de el estudiante deben ser unico"});
         }
 
@@ -232,7 +249,8 @@ const getDirectors =  async (req, res, next) => {
 
         //Obtenemos los directores
         const directors = await Usuario.findAll({
-            where: { tipo: 'Director' }
+            where: { tipo: 'Director' },
+            attributes: [ 'id', 'nombre', 'apellido', 'codigo', 'email', 'celular', 'estado' ]
         })
 
         // Respondemos al usuario
@@ -258,7 +276,8 @@ const getDirectorById = async (req, res) => {
             where: {
                 id,
                 rol_id: 1
-            }
+            },
+            attributes: [ 'nombre', 'apellido', 'codigo', 'email', 'celular', 'direccion', 'telefono', 'documento', 'estado' ]
         });
 
         if(!director){
@@ -276,19 +295,15 @@ const getDirectorById = async (req, res) => {
 
 /* --------- updateDirector function -------------- */
 
-const updateDirector = async (req, res) => {
+const updateDirector = async (req, res, next) => {
+
+    //Obtenemos el id del director a actualizar
+    const {id} = req.user;
+
+    // Obtenemos los datos a actualizar
+    const { nombre, apellido, codigo, email, telefono, direccion, documento, celular } = req.body;
 
     try {
-
-        //Obtenemos el id del director a actualizar
-        const {id} = req.params;
-
-        // Verificamos el id de entrada
-        const regexNum = /^[0-9]+$/; // Expresión regular que controla solo la admición de numeros
-
-        if(!regexNum.test(id)){
-            return res.status(400).json({error: 'id no valido'});
-        }
 
         //Obtenemos y verificamos el director
         const director = await Usuario.findOne({
@@ -297,20 +312,6 @@ const updateDirector = async (req, res) => {
                 rol_id: 1
             }
         });
-
-        if(!director){
-            return res.status(400).json({error: 'No se encuentra ningun director asociado con el id especificado'});
-        }
-
-        // Obtenemos los datos a actualizar
-        const {nombre, apellido, codigo, email, telefono, direccion, documento, celular, estado} = req.body;
-
-        // Validamos los datos obtenidos
-        const regexData = /^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/;
-
-        if(!regexData.test(nombre) || !regexData.test(apellido) || !regexNum.test(codigo) || !regexNum.test(telefono) || !regexNum.test(documento) || !regexNum.test(celular)){
-           return res.status(400).json({error: 'La sintaxis de los datos ingresados es incorrecta'});
-        }
 
         //Comprobamos que no exista un director con el mismo codigo y documento
         const directorExist = await Usuario.findOne({
@@ -336,15 +337,14 @@ const updateDirector = async (req, res) => {
             telefono,
             direccion,
             documento,
-            celular,
-            estado
+            celular
         });
 
         //Respondemos a la petición
-        res.status(200).json(director);
+        res.status(200).json({ message: "Datos actualizados correctamente" });
 
     } catch (error) {
-        return res.status(500).json({error: `Error al actualizar la información del director: ${error.message}`});
+        next(new Error(`Ocurrio un problema al actualizar los datos del director: ${error.message}`));
     }
 };
 
@@ -353,29 +353,13 @@ const updateDirector = async (req, res) => {
 
 const updatePhotoDirector = async (req, res) => {
 
+    //Obtenemos el identificador del director
+    const { id } = req.user;
+
     try {
 
-        //Obtenemos el id del director a actualizar
-        const {id} = req.params;
-
-        // Verificamos el id de entrada
-        const regexNum = /^[0-9]+$/; // Expresión regular que controla solo la admición de numeros
-
-        if(!regexNum.test(id)){
-            return res.status(400).json({error: 'id no valido'});
-        }
-
         //Obtenemos el director
-        const director = await Usuario.findOne({
-            where: {
-                id,
-                rol_id: 1
-            }
-        });
-
-        if(!director){
-            return res.status(400).json({error: 'No se encuentra ningun director asociado con el id especificado'});
-        }
+        const director = await Usuario.findByPk(id);
 
         await director.update({
             foto_perfil: req.file.filename
@@ -394,23 +378,18 @@ const updatePhotoDirector = async (req, res) => {
 
 /* --------- updatePassword function -------------- */
 
-const updatePassword = async (req, res) => {
+const updatePassword = async (req, res, next) => {
+
+    // Obtenemos el identificador del admin
+    const { id } = req.user;
+
+    // Obtenemos la contraseña actual y la nueva contraseña a actualizar
+    const {password, newPassword} = req.body;
 
     try{
 
-        // Obtenemos el email del usuario
-        const {email, password, newPassword} = req.body
-
         // Verificamos la existencia del usuario
-        const user = await Usuario.findOne({
-            where: {
-                email
-            }
-        });
-
-        if(!user){
-            return res.status(400).json({error: `El email del usuario no se encuentra registrado`});
-        }
+        const user = await Usuario.findByPk(id);
 
         // Comparamos la contraseña ingreasada
         const match = await bcrypt.compare(password, user.password);
@@ -423,7 +402,7 @@ const updatePassword = async (req, res) => {
         const genSalt = await bcrypt.genSalt(11);
         const hash = await bcrypt.hash(newPassword, genSalt);
 
-        // Actualizamos la contraseña
+        // Actualizamos la contraseña del administrador
         await user.update({
             password: hash
         });
@@ -431,7 +410,7 @@ const updatePassword = async (req, res) => {
         res.status(200).json({message:"Contraseña cambiada correctamente"});
 
     }catch(error){
-        return res.status(500).json({error: `Error al cambiar contraseña: ${error}`})
+        next(new Error(`Ocurrio un problema al cambiar la contraseña del administrador: ${error.message}`));
     }
 
 };
@@ -447,7 +426,8 @@ const controller = {
     getDirectorById,
     updateDirector,
     updatePhotoDirector,
-    updatePassword
+    updatePassword,
+    getProfile
 
 }
 

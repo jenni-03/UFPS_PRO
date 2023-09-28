@@ -17,10 +17,6 @@ const Categoria = sequelize.define('categorias', {
         validate: {
             notEmpty:{
                 msg: "El nombre de la categoria no puede ser vacio"
-            },
-            len:{
-                args: [3, 45],
-                msg: "El nombre solo puede contener entre 3 y 45 caracteres"
             }
         }
     },
@@ -30,10 +26,6 @@ const Categoria = sequelize.define('categorias', {
         validate: {
             notEmpty:{
                 msg: "La descripción de la categoria no puede ser vacia"
-            },
-            len:{
-                args: [10, 240],
-                msg: "La descripción debe contener minímo 10 caracteres"
             }
         }
     },

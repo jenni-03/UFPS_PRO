@@ -93,10 +93,10 @@ export const directorSchema = z.object({
         .object({
             url: z.string().url(),
             public_id: z.string()
-        }).optional(),
+        })
     
 
-});
+}).optional();
 
 
 // Esquema para usuario estudiante
@@ -233,6 +233,12 @@ export function validateLoginData(req, res, next) {
 
 export function validateStudentData(req, res, next){
     const errors = validateData(studentSchema, req);
+    if (errors.length !== 0) return res.status(400).json({ error: errors });
+    next();
+}
+
+export function validateDirectorData(req, res, next){
+    const errors = validateData(directorSchema, req.body);
     if (errors.length !== 0) return res.status(400).json({ error: errors });
     next();
 }

@@ -1,30 +1,20 @@
 
 /** Limite de tamaño */
-const MB = 4;
-const FILE_SIZE_LIMIT = 4 * 1024 * 1024;
+const MB = 3;
+const FILE_SIZE_LIMIT = 3 * 1024 * 1024;
 
 
 /** Middleware encargado de verificar que todos los archivos se encuentren dentro de los limites */
 
 const fileSizeLimiter = (req, res, next) => {
 
-    // Obtenemos los archivos
-    const files = req.files;
+    // Obtenemos el archivo
+    const file = req.file;
 
-    // Creamos un arreglo donde almacenaremos los archivos fuera del limite
-    const filesOverLimit = [];
+    // Determinamos si el tamaño sobrepasa el limite especificado
+    if(file.size > FILE_SIZE_LIMIT){
 
-    // Buscamos aquellos archivos fuera de los limites
-    Object.keys(files).forEach(key => {
-        if(files[key].size > FILE_SIZE_LIMIT){
-            filesOverLimit.push(files[key].name);
-        }
-    });
-
-    // Si se encontraron archivos devuelvo error
-    if(filesOverLimit.length){
-
-        const sentence = `Error al cargar el archivo. ${filesOverLimit.toString()} esta por encima del limite de los ${MB} MB.`.replaceAll(",", ", ");
+        const sentence = `Error al cargar el archivo. ${file.originalname} esta por encima del limite de los ${MB} MB.`;
 
         return res.status(400).json({ error: sentence });
 
@@ -34,4 +24,4 @@ const fileSizeLimiter = (req, res, next) => {
 
 };
 
-module.exports = fileSizeLimiter;
+export default fileSizeLimiter;
