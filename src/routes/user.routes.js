@@ -7,16 +7,25 @@ import Usuario from '../models/Usuario.js';
 import extractToken from '../middlewares/extractToken.js';
 import verifyJWT from '../middlewares/verifyJWT.js';
 import isAdmin from '../middlewares/isAdmin.js';
-import { validateStudentData } from '../schemas/userSchema.js'
+import { validateStudentData, validateDirectorData } from '../schemas/userSchema.js'
+import filePayloadExists from '../middlewares/filePayloadExist.js';
+import fileExtLimiter from '../middlewares/fileExtLimiter.js';
 
 // Importamos las funciones del controlador
 import userController from '../controllers/userController.js';
+import fileSizeLimiter from '../middlewares/fileSizeLimiter.js';
 
 // Inicializamos el router
 const router = Router();
 
 
 // Routes
+
+// @desc Endpoint encargado de la obtención del perfil de cada usuario
+// @route GET /api/user/profile
+// @access solo Usuarios
+router.get('/profile', [ extractToken, verifyJWT ], userController.getProfile);
+
 
 // @desc Endpoint encargado de la creación de un nuevo estudiante
 // @route POST /api/user/student/create
@@ -57,38 +66,31 @@ router.get('/admin', [extractToken, verifyJWT, isAdmin], userController.getDirec
 // @desc Endpoint encargado de la obtención de un unico director por su id
 // @route GET /api/user/admin/:id
 // @access solo Admin
-router.get('/admin/:id', [extractToken, verifyJWT, isAdmin], userController.getDirectorById);
+router.get('/admin/:id', [extractToken, verifyJWT, isAdmin, validateStudentData], userController.getDirectorById);
 
 
-// @desc Endpoint encargado de la actualización de los datos del director
-// @route PUT /api/user/admin/update/:id
+// @desc Endpoint encargado de la actualización de los datos del director en función
+// @route PUT /api/user/admin/update
 // @access solo Admin
-router.put('/admin/update', [extractToken, verifyJWT, isAdmin], userController.updateDirector);
+router.put('/admin/update', [extractToken, verifyJWT, isAdmin, validateDirectorData], userController.updateDirector);
 
 
 // Storage de multer
 const multerStorage = multer.diskStorage({
 
-    destination: (req, file, cb) => {
-        const filePath = path.resolve(__dirname, '../public/directors');
-        cb(null, filePath);
-    },
     filename: (req, file, cb) => {
 
         // Obtenemos los datos del usuario
-        Usuario.findOne({
-            where: {
-                email: req.user.username
-            }
-        }).then((director) => {
+        Usuario.findByPk(req.user.id)
+            .then((director) => {
 
-            // Obtenemos la extensión del archivo
-            const fileExtension = path.extname(file.originalname);
+                // Obtenemos la extensión del archivo
+                const fileExtension = path.extname(file.originalname);
 
-            // Creamos el nombre del archivo 
-            const fileName = `${director.documento}${fileExtension}`;
+                // Creamos el nombre del archivo 
+                const fileName = `${director.codigo}${fileExtension}`;
 
-            cb(null, fileName);
+                cb(null, fileName);
 
         }).catch(error => cb(error));
 
@@ -96,33 +98,19 @@ const multerStorage = multer.diskStorage({
 
 });
 const upload = multer({
-    storage: multerStorage,
-    fileFilter: (req, file, cb) => {
-
-        const mymetypes = ["image/jpeg", "image/png"];
-
-        if(mymetypes.includes(file.mimetype)){
-            cb(null, true);
-        }else{
-            cb(new Error(`Solo se admiten los siguientes mymetypes: ${mymetypes.join(' ')}`), false);
-        }
-
-    },
-    limits: {
-        fileSize: 4 * 1024 * 1024
-    }
+    storage: multerStorage
 });
 
 // @desc Endpoint encargado de la actualización de la foto de perfil del director
-// @route PUT /api/user/admin/updatePhoto/:id
+// @route PUT /api/user/admin/updatePhoto
 // @access solo Admin
-router.put('/admin/updatePhoto/:id', [verifyJWT, isAdmin, upload.single('avatar')], userController.updatePhotoDirector);
+router.put('/admin/updatePhoto', [extractToken, verifyJWT, isAdmin, upload.single('avatar'), filePayloadExists, fileExtLimiter(["image/jpeg", "image/png"]), fileSizeLimiter], userController.updatePhotoDirector);
 
 
 // @desc Endpoint encargado de la actualización de la contraseña de un admin
 // @route PUT /api/user/admin/updatePassword
 // @access solo Admin
-router.put('/admin/updatePassword', [verifyJWT, isAdmin], userController.updatePassword);
+router.put('/admin/updatePassword', [extractToken, verifyJWT, isAdmin], userController.updatePassword);
 
 
 // Importamos el router

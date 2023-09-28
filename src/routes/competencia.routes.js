@@ -1,11 +1,12 @@
-const {Router} = require('express');
+import {Router} from 'express';
 
 // Importamos las funciones del controlador
-const competenciaController = require('../controllers/competenciaController');
+import competenciaController from '../controllers/competenciaController.js';
 
 // Importamos los middlewares de autenticación
-const authJWT = require('../middlewares/verifyJWT');
-const isAdmin = require('../middlewares/isAdmin');
+import extractToken from '../middlewares/extractToken.js';
+import authJWT from '../middlewares/verifyJWT.js';
+import isAdmin from '../middlewares/isAdmin.js';
 
 // Inicializamos el router
 const router = Router();
@@ -34,7 +35,7 @@ router.get('/:id/categorias', [authJWT, isAdmin], competenciaController.getCateg
 // @desc Endpoint encargado de la creación de una competencia
 // @route POST /api/competencia/create
 // @access solo Admin
-router.post('/create', [authJWT, isAdmin], competenciaController.createCompetencia);
+router.post('/create', [extractToken, authJWT, isAdmin], competenciaController.createCompetencia);
 
 
 // @desc Endpoint encargado de la actualización de una competencia
@@ -43,4 +44,4 @@ router.post('/create', [authJWT, isAdmin], competenciaController.createCompetenc
 router.put('/update/:id', [authJWT, isAdmin], competenciaController.updateCompetencia);
 
 // Exportamos el router
-module.exports = router;
+export default router;

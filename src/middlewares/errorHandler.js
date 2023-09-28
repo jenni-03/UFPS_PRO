@@ -1,23 +1,17 @@
-//const {logEvents} = require('./logger');
-//const multer = require('multer');
+import multer from "multer";
 
 
 // Middleware encargado del manejo de errores
 const errorHandler = (err, req, res, next) => {
 
-    /*if (err instanceof multer.MulterError) {
+    if (err instanceof multer.MulterError) {
 
-        // Error de Multer
-        if (err.code === 'LIMIT_FILE_SIZE') {
-          return res.status(400).json({ error: 'El archivo excede el tamaño máximo permitido.' });
-        }
+        req.log.warn(err.stack);
+        return res.status(400).json({ error: `Error de carga de archivo: ${err.message}` });
 
-        // Otros errores de Multer
-        return res.status(400).json({ error: `Error al cargar el archivo: ${err}` });
-
-    }*/
+    }
     
-    if (err) {
+    else if (err) {
 
         req.log.error(err.stack);
 
