@@ -27,6 +27,7 @@ export const competenceSchema = z.object({
                 invalid_type_error: 'El estado solo puede ser un valor booleano',
                 required_error: 'El estado es requerido'
             })
+            
     }).partial(),
 
     params: z.object({
