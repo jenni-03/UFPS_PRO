@@ -14,6 +14,7 @@ import fileExtLimiter from '../middlewares/fileExtLimiter.js';
 // Importamos las funciones del controlador
 import userController from '../controllers/userController.js';
 import fileSizeLimiter from '../middlewares/fileSizeLimiter.js';
+import limiter from '../middlewares/rateLimit.js';
 
 // Inicializamos el router
 const router = Router();
@@ -24,7 +25,7 @@ const router = Router();
 // @desc Endpoint encargado de la obtención del perfil de cada usuario
 // @route GET /api/user/profile
 // @access solo Usuarios
-router.get('/profile', [ extractToken, verifyJWT ], userController.getProfile);
+router.get('/profile', [ limiter, extractToken, verifyJWT ], userController.getProfile);
 
 
 // @desc Endpoint encargado de la creación de un nuevo estudiante
@@ -42,19 +43,19 @@ router.get('/student', [ extractToken, verifyJWT, isAdmin, validateStudentData ]
 // @desc Endpoint encargado de la obtención de un solo estudiante por su id
 // @route GET /api/user/student/:id
 // @access Estudiante
-router.get('/student/:id', [ extractToken, verifyJWT, isAdmin, validateStudentData ], userController.getStudentById);
+router.get('/student/:id', [ limiter, extractToken, verifyJWT, isAdmin, validateStudentData ], userController.getStudentById);
 
 
 // @desc Endpoint encargado de la actualización de los datos de contacto de un estudiante por el mismo a partir de su id
 // @route PUT /api/user/student/update/:id
 // @access Estudiante
-router.put('/student/update', [ extractToken, verifyJWT, validateStudentData ], userController.updateStudentData);
+router.put('/student/update', [ limiter, extractToken, verifyJWT, validateStudentData ], userController.updateStudentData);
 
 
 // @desc Endpoint encargado de la actualización de datos de un estudiante por parte del director
 // @route PUT /api/user/student/update/:id
 // @access solo Admin
-router.put('/student/update/:id', [ extractToken, verifyJWT, isAdmin, validateStudentData ], userController.updateStudentDataDir);
+router.put('/student/update/:id', [ limiter, extractToken, verifyJWT, isAdmin, validateStudentData ], userController.updateStudentDataDir);
 
 
 // @desc Endpoint encargado de la obtención de todos los directores registrados (incluidos no activos)
@@ -66,13 +67,13 @@ router.get('/admin', [extractToken, verifyJWT, isAdmin], userController.getDirec
 // @desc Endpoint encargado de la obtención de un unico director por su id
 // @route GET /api/user/admin/:id
 // @access solo Admin
-router.get('/admin/:id', [extractToken, verifyJWT, isAdmin, validateStudentData], userController.getDirectorById);
+router.get('/admin/:id', [limiter, extractToken, verifyJWT, isAdmin, validateStudentData], userController.getDirectorById);
 
 
 // @desc Endpoint encargado de la actualización de los datos del director en función
 // @route PUT /api/user/admin/update
 // @access solo Admin
-router.put('/admin/update', [extractToken, verifyJWT, isAdmin, validateDirectorData], userController.updateDirector);
+router.put('/admin/update', [limiter, extractToken, verifyJWT, isAdmin, validateDirectorData], userController.updateDirector);
 
 
 // Storage de multer
@@ -104,13 +105,13 @@ const upload = multer({
 // @desc Endpoint encargado de la actualización de la foto de perfil del director
 // @route PUT /api/user/admin/updatePhoto
 // @access solo Admin
-router.put('/admin/updatePhoto', [extractToken, verifyJWT, isAdmin, upload.single('avatar'), filePayloadExists, fileExtLimiter(["image/jpeg", "image/png"]), fileSizeLimiter], userController.updatePhotoDirector);
+router.put('/admin/updatePhoto', [limiter, extractToken, verifyJWT, isAdmin, upload.single('avatar'), filePayloadExists, fileExtLimiter(["image/jpeg", "image/png"]), fileSizeLimiter], userController.updatePhotoDirector);
 
 
 // @desc Endpoint encargado de la actualización de la contraseña de un admin
 // @route PUT /api/user/admin/updatePassword
 // @access solo Admin
-router.put('/admin/updatePassword', [extractToken, verifyJWT, isAdmin], userController.updatePassword);
+router.put('/admin/updatePassword', [limiter, extractToken, verifyJWT, isAdmin], userController.updatePassword);
 
 
 // Importamos el router

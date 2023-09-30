@@ -4,6 +4,7 @@ import password_generator from 'generate-password';
 import encryptPasswd from '../util/encryptPassword.js';
 import generateCorreo from '../util/emailGenerator.js';
 import bcrypt from 'bcrypt';
+import { uploadImage, updateFile } from '../libs/cloudinary.js';
 
 
 /* --------- getProfile function -------------- */
@@ -11,13 +12,17 @@ import bcrypt from 'bcrypt';
 const getProfile = async (req, res, next) => {
 
     // Obtenemos el identificador del usuario 
-    const { id } = req.user;
+    const { id, type } = req.user;
 
     try{
 
+        let excluded_attributes;
+
+        type === 'Director' ? excluded_attributes = ['password', 'rol_id', 'estado', 'semestre'] : excluded_attributes = ['telefono', 'direccion', 'documento', 'celular', 'foto_perfil', 'password', 'rol_id', 'estado'];
+
         // Buscamos el usuario
         const existUser = await Usuario.findByPk(id, {
-            attributes: { exclude: ['password', 'rol_id', 'estado'] }
+            attributes: { exclude: excluded_attributes }
         });
 
         return res.status(200).json(existUser);
@@ -178,7 +183,7 @@ const createStudent =  async (req, res, next) => {
         res.status(200).json({ message: 'Usuario creado exitosamente' });
 
     } catch (error) {
-        next(new Error(`Ocurrio un problema al intentar crear el estudiante: ${error.message}`));
+        next(new Error(`Ocurrio un problema al intentar añadir el estudiante: ${error.message}`));
     }
 
 };
@@ -351,7 +356,7 @@ const updateDirector = async (req, res, next) => {
 
 /* --------- updatePhotoDirector function -------------- */
 
-const updatePhotoDirector = async (req, res) => {
+const updatePhotoDirector = async (req, res, next) => {
 
     //Obtenemos el identificador del director
     const { id } = req.user;
@@ -360,18 +365,38 @@ const updatePhotoDirector = async (req, res) => {
 
         //Obtenemos el director
         const director = await Usuario.findByPk(id);
+        
+        // Variables de configuración de la imagen
+        let result;
+        let image;
 
+        // Formateamos el nombre
+        const imageName = req.file.filename.split('.')[0];
+
+        if (!director.foto_perfil){
+            result = await uploadImage(req.file.path, imageName);
+        }else{
+            result = await updateFile(req.file.path, director.foto_perfil.public_id);
+        }
+
+        // Definimos los atributos a almacenar
+        image = {
+            url: result.secure_url,
+            public_id: result.public_id
+        }
+
+        // Actualizamos la foto
         await director.update({
-            foto_perfil: req.file.filename
+            foto_perfil: image
         });
     
         res.status(200).json({
             message: "Tu foto ha sido actualizada correctamente",
-            imageFile: `https://apisimulador-production.up.railway.app/${req.file.filename}`
+            imageFile: `${director.foto_perfil.url}`
         });
     
     } catch (error) {
-        return res.status(500).json({error: `Error al actualizar la foto de administrador: ${error.message}`});
+        next(new Error(`Ocurrio un problema al actualizar la foto del administrador: ${error.message}`));
     }
 };
 

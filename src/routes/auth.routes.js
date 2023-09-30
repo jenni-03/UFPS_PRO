@@ -7,6 +7,7 @@ import { login, logout, refresh, requestPasswordRst, resetPassword } from '../co
 // Middlewares
 import verifyJWT from '../middlewares/verifyJWT.js';
 import extractToken from '../middlewares/extractToken.js';
+import limiter from '../middlewares/rateLimit.js';
 
 // Inicializamos el router
 const router = Router();
@@ -17,7 +18,7 @@ const router = Router();
 // @desc Endpoint encargado de la administración del Login de usuario
 // @route POST /api/auth/login
 // @access public
-router.post('/login', validateLoginData, login);
+router.post('/login', limiter, validateLoginData, login);
 
 
 // @desc Enpoint encargado de realizar el refresco del token de acceso
@@ -35,7 +36,7 @@ router.post('/logout', [extractToken, verifyJWT], logout);
 // @desc Enpoint encargado de gestionar la petición de cambio de contraseña
 // @route POST /api/auth/requestPasswordReset
 // @access public 
-router.post('/requestPasswordReset', validateReqPassReset, requestPasswordRst);
+router.post('/requestPasswordReset', limiter, validateReqPassReset, requestPasswordRst);
 
 
 // @desc Enpoint encargado de llevar a cabo el cambio de contraseña
