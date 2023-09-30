@@ -106,24 +106,30 @@ app.use(errorHandler);
 
 
 // Corremos el servidor
-sequelize.sync()
-    .then(() => {
+const main = async () => {
 
-        // Creamos los roles y el usuario admin
+    try {
+
+        // Sincroniza las tablas
+        await sequelize.sync();
+    
+        // Crea los roles y el usuario admin
         generateRole();
         createAdminUser();
-
-    })
-    .then(() => {
-
-        // Iniciamos el servidor una vez que las tablas se sincronizen
+    
+        // Inicia el servidor una vez que las tablas se sincronicen
         app.listen(PORT, () => {
-            logger.info(`App is running on http://localhost:${PORT}`);
+          logger.info(`App is running on http://localhost:${PORT}`);
         });
 
-    })
-    .catch(err => logger.error(`Error al sincronizar con la BD: ${err.message}`));
+      } catch (err) {
+        logger.error(`Error al sincronizar con la BD: ${err.message}`);
+      }
+
+}
 
 
+// Llamada a la función principal
+main();
 
 

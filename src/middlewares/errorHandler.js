@@ -1,5 +1,5 @@
 import multer from "multer";
-
+import { ConnectionTimedOutError } from "sequelize";
 
 // Middleware encargado del manejo de errores
 const errorHandler = (err, req, res, next) => {
@@ -7,7 +7,14 @@ const errorHandler = (err, req, res, next) => {
     if (err instanceof multer.MulterError) {
 
         req.log.warn(err.stack);
-        return res.status(400).json({ error: `Error de carga de archivo: ${err.message}` });
+        res.status(400).json({ error: `Error de carga de archivo: ${err.message}` });
+
+    }
+
+    else if (err instanceof ConnectionTimedOutError){
+
+        req.log.warn(`El pool de cinexiones se ha agotado: ${err.stack}`);
+        res.status(503).json({ error: 'El servicio no está disponible temporalmente debido a la alta demanda. Inténtalo más tarde.' });
 
     }
     

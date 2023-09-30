@@ -96,7 +96,7 @@ export const directorSchema = z.object({
         })
     
 
-}).optional();
+}).partial();
 
 
 // Esquema para usuario estudiante

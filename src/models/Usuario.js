@@ -106,7 +106,7 @@ const User = sequelize.define('usuarios', {
         }
     },
     foto_perfil: {
-        type: DataTypes.STRING,
+        type: DataTypes.JSON,
         allowNull: true
     },
     // Student data
