@@ -26,17 +26,6 @@ const Pregunta = sequelize.define('preguntas', {
         validate: {
             notEmpty:{
                 msg: "El semestre no puede ser vacio"
-            },
-            isNumeric: {
-                msg: "El semestre solo ha de contener números"
-            },
-            min: {
-                args: 1,
-                msg: "El semestre debe ser mayor que 0"
-            },
-            max: {
-                args: 10,
-                msg: "El semestre debe ser menor o igual a 10"
             }
         }
     },
@@ -59,15 +48,11 @@ const Pregunta = sequelize.define('preguntas', {
         validate: {
             notEmpty: {
                 msg: "Las opciones no pueden ser vacias"
-            },
-            len: {
-                args: [0, 255],
-                msg: 'Pregunta fuera de rango'
             }
         }
     },
     imagen: {
-        type: DataTypes.STRING,
+        type: DataTypes.JSON,
         allowNull: true
     },
     categoria_id: {

@@ -17,6 +17,10 @@ const errorHandler = (err, req, res, next) => {
         res.status(503).json({ error: 'El servicio no está disponible temporalmente debido a la alta demanda. Inténtalo más tarde.' });
 
     }
+
+    else if (res.statusCode === 400){
+        res.json({error: err.message});
+    }
     
     else if (err) {
 

@@ -42,7 +42,7 @@ const categorySchema = z.object({
 
         id: z
             .string({
-                required_error: 'El identificador es necesario'
+                required_error: 'El identificador de la categoria es necesario'
             }).regex(/^[0-9]+$/, 'Req no válido')
  
     }).partial(),
@@ -52,8 +52,7 @@ const categorySchema = z.object({
  
         estado: z
             .string({ 
-                invalid_type_error: 'El estado solo puede ser un valor textual',
-                required_error: 'El estado es requerido'
+                required_error: 'El estado de la categoria es requerido'
             }).regex(/^(0|1)$/, "El formato de la query no coinicde")
  
     }).partial()

@@ -5,18 +5,22 @@ const fileExtLimiter = (allowedMymetypes) => {
 
     return (req, res, next) => {
 
-        // Obtenemos el mymetype del archivo
-        const fileType = req.file.mimetype;
+        if (req.file){
 
-        // Determinamos si el archivo es permitido
-        const allowed = allowedMymetypes.includes(fileType);
+            // Obtenemos el mymetype del archivo
+            const fileType = req.file.mimetype;
 
-        // Si no es permitido, respondemos con error
-        if(!allowed){
+            // Determinamos si el archivo es permitido
+            const allowed = allowedMymetypes.includes(fileType);
 
-            const message = `Error al cargar el archivo. Unicamente los tipos de archivo ${allowedMymetypes.toString()} estan permitidos.`.replaceAll(",", ", ");
+            // Si no es permitido, respondemos con error
+            if(!allowed){
 
-            return res.status(400).json({ error: message });
+                const message = `Error al cargar el archivo. Unicamente los tipos de archivo ${allowedMymetypes.toString()} estan permitidos.`.replaceAll(",", ", ");
+
+                return res.status(400).json({ error: message });
+
+            }
 
         }
 

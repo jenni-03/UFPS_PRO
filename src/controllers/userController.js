@@ -373,7 +373,7 @@ const updatePhotoDirector = async (req, res, next) => {
         // Formateamos el nombre
         const imageName = req.file.filename.split('.')[0];
 
-        if (!director.foto_perfil){
+        if (director.foto_perfil === null) {
             result = await uploadImage(req.file.path, imageName);
         }else{
             result = await updateFile(req.file.path, director.foto_perfil.public_id);
@@ -440,7 +440,7 @@ const updatePassword = async (req, res, next) => {
 
 };
 
-const controller = { 
+const userController = { 
 
     getStudents,
     getStudentById,
@@ -456,4 +456,4 @@ const controller = {
 
 }
 
-export default controller;
+export default userController;
