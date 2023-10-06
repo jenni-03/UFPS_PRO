@@ -1,7 +1,7 @@
 
 /** Limite de tamaño */
-const MB = 3;
-const FILE_SIZE_LIMIT = 3 * 1024 * 1024;
+const MB = 5;
+const FILE_SIZE_LIMIT = 5 * 1024 * 1024;
 
 
 /** Middleware encargado de verificar que todos los archivos se encuentren dentro de los limites */
@@ -9,14 +9,18 @@ const FILE_SIZE_LIMIT = 3 * 1024 * 1024;
 const fileSizeLimiter = (req, res, next) => {
 
     // Obtenemos el archivo
-    const file = req.file;
+    const file = req.file || req.files.archivo;
 
     // Determinamos si el tamaño sobrepasa el limite especificado
-    if(file.size > FILE_SIZE_LIMIT){
+    if (file){
 
-        const sentence = `Error al cargar el archivo. ${file.originalname} esta por encima del limite de los ${MB} MB.`;
+        if(file.size > FILE_SIZE_LIMIT){
 
-        return res.status(400).json({ error: sentence });
+            const sentence = `Error al cargar el archivo. ${file.originalname} esta por encima del limite de los ${MB} MB.`;
+    
+            return res.status(400).json({ error: sentence });
+    
+        }
 
     }
 

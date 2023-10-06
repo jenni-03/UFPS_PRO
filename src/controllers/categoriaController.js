@@ -16,7 +16,7 @@ const getCategorias = async (req, res, next) => {
             where: {
                 estado: state
             },
-            attributes: ['id', 'nombre', 'descripcion', 'estado'],
+            attributes: ['id', 'nombre', 'estado'],
             include: {
                 model: Competencia,
                 attributes: ['nombre']
@@ -69,31 +69,32 @@ const getCategoriaById = async (req, res, next) => {
 
 const createCategoria = async (req, res, next) => {
 
+    // Obtenemos los datos de la categoria a crear
+    const {nombre, descripcion, competencia_id} = req.body;
+
     try{
 
-        // Obtenemos los datos de la categoria a crear
-        const {nombre, descripcion, competencia_id} = req.body;
+        const [categoriaExist, competencia_exist] = await Promise.all([
 
-        // Comprobamos que el nombre de la categoria sea unico -> hacer paralelo
-        const categoriaExist = await Categoria.findOne({
-            where: {
-                nombre
-            }
-        });
+            Categoria.findOne({
+                where: {
+                    nombre
+                }
+            }),
+            Competencia.findByPk(competencia_id)
 
-        if(categoriaExist){
-            return res.status(400).json({error: `El nombre de categoria ${nombre} ya se encuentra registrado`});
-        }
+        ]);
+
+        // Comprobamos que el nombre de la categoria sea unico
+        if(categoriaExist) return res.status(400).json({error: `El nombre de la categoria ${nombre} ya se encuentra registrado`});
+        
 
         // Comprobamos que el id de la competencia corresponda a uno válido
-        const competencia_exist = await Competencia.findByPk(competencia_id);
+        if(!competencia_exist) return res.status(400).json({error: 'El id de competencia proporcionado no corresponde con ninguna existente'});
         
-        if(!competencia_exist){
-            return res.status(400).json({error: 'El id de competencia proporcionado no corresponde con ninguna existente'});
-        }
 
         // Creamos la categoria
-        const categoria = await Categoria.create({
+        await Categoria.create({
             nombre: nombre.toUpperCase(),
             descripcion,
             competencia_id
@@ -121,31 +122,30 @@ const updateCategoria = async (req, res, next) => {
 
     try{
 
-        // Obtenemos y verificamos la categoria
-        const categoria = await Categoria.findByPk(id);
+        const [categoria, categoriaExist, competencia_exist] = await Promise.all([
+
+            Categoria.findByPk(id),
+
+            Categoria.findOne({
+                where: {
+                    nombre
+                }
+            }),
+
+            Competencia.findByPk(competencia_id)
+
+        ]);
         
-        if(!categoria){
-            return res.status(400).json({error: 'No se encuentra ninguna categoria con el id especificado'});
-        }
-
+        // Verificamos la categoria
+        if(!categoria) return res.status(400).json({error: 'No se encuentra ninguna categoria con el id especificado'});
+        
         // Comprobamos que el nombre sea unico 
-        const categoriaExist = await Categoria.findOne({
-            where: {
-                nombre
-            }
-        });
-
-        if(categoriaExist && categoriaExist.nombre !== categoria.nombre){
-            return res.status(400).json({error: `El nombre de categoria ${nombre} ya se encuentra registrado`});
-        }
+        if(categoriaExist && categoriaExist.nombre !== categoria.nombre) return res.status(400).json({error: `El nombre de la categoria ${nombre} ya se encuentra registrado`});
+        
 
         // Comprobamos que el id de la competencia corresponda a uno válido
-        const competencia_exist = await Competencia.findByPk(competencia_id);
-        
-        if(!competencia_exist){
-            return res.status(400).json({error: 'El id de competencia proporcionado no corresponde con ninguna existente'});
-        }
-
+        if(!competencia_exist) return res.status(400).json({error: 'El id de la competencia proporcionado no corresponde con ninguna existente'});
+    
         // Actualizamos la categoria
         await categoria.update({
             nombre: nombre.toUpperCase(),

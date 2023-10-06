@@ -16,7 +16,7 @@ const getCompetencias = async (req, res, next) => {
             where: {
                 estado: state
             },
-            attributes: ['id', 'nombre', 'descripcion', 'estado'],
+            attributes: ['id', 'nombre', 'estado'],
             include: {
                 model: Categoria,
                 attributes: ['nombre']
@@ -122,7 +122,7 @@ const createCompetencia = async (req, res) => {
         });
 
         if(compFound){
-            return res.status(400).json({error: `El nombre de competencia ${nombre} ya se encuentra registrado`});
+            return res.status(400).json({error: `El nombre de la competencia ${nombre} ya se encuentra registrado`});
         }
 
         // Creamos la competencia
@@ -153,24 +153,24 @@ const updateCompetencia = async (req, res, next) => {
 
     try{
 
-        // Obtenemos y verificamos la competencia
-        const competencia = await Competencia.findByPk(id);
+        // Hacemos las verificaciones de la competencia en paralelo
+        const [competencia, compFound] = await Promise.all([
+
+            Competencia.findByPk(id),
+            Competencia.findOne({
+                where: {
+                    nombre
+                }
+            })
+
+        ]);
+
+        // verificamos la competencia
+        if(!competencia) return res.status(400).json({error: 'No se encuentra ninguna competencia con el id especificado'});
         
-        if(!competencia){
-            return res.status(400).json({error: 'No se encuentra ninguna competencia con el id especificado'});
-        }
-
         // Comprobamos que el nombre sea unico 
-        const compFound = await Competencia.findOne({
-            where: {
-                nombre
-            }
-        });
-
-        if(compFound && competencia.nombre !== compFound.nombre){
-            return res.status(400).json({error: `El nombre de competencia ${nombre} ya se encuentra registrado`});
-        }
-
+        if(compFound && competencia.nombre !== compFound.nombre) return res.status(400).json({error: `El nombre de competencia ${nombre} ya se encuentra registrado`});
+        
         // Actualizamos la competencia
         await competencia.update({
             nombre: nombre.toUpperCase(),

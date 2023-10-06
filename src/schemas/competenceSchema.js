@@ -27,13 +27,14 @@ export const competenceSchema = z.object({
                 invalid_type_error: 'El estado solo puede ser un valor booleano',
                 required_error: 'El estado es requerido'
             })
+            
     }).partial(),
 
     params: z.object({
         
         id: z
             .string({
-                required_error: 'El identificador es necesario'
+                required_error: 'El identificador de la competencia es necesario'
             }).regex(/^[0-9]+$/, 'Req no válido')
 
     }).partial(),
@@ -42,8 +43,7 @@ export const competenceSchema = z.object({
 
         estado: z
             .string({ 
-                invalid_type_error: 'El estado solo puede ser un valor textual',
-                required_error: 'El estado es requerido'
+                required_error: 'El estado de la competencia es requerido'
             }).regex(/^(0|1)$/, "El formato de la query no coincide")
 
     }).partial()
