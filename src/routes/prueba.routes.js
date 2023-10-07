@@ -33,6 +33,24 @@ router.get('/:id', [extractToken, authJWT, isAdmin, validateTestData], testContr
 router.post('/create', [extractToken, authJWT, isAdmin, validateTestData], testController.createTest);
 
 
+// @desc Endpoint encargado de la asignación de competencias para una prueba
+// @route POST /api/prueba/asign/competences/:id
+// @access solo Admin
+router.post('/asign/compentences', [extractToken, authJWT, isAdmin], );
+
+
+// @desc Endpoint encargado de la configuración correspondiente de los valores asignados a las categorias de la prueba
+// @route POST /api/prueba/asign/valueCategories/:id
+// @access solo Admin
+router.post('/asign/valueCategories/:id', [extractToken, authJWT, isAdmin], );
+
+
+// @desc Endpoint encargado de la asignación de las preguntas a una prueba
+// @route POST /api/prueba/asign/questions/:id
+// @access solo Admin
+router.post('/asign/questions/:id', [extractToken, authJWT, isAdmin], );
+
+
 // @desc Endpoint encargado de la actualización de una prueba por su id
 // @route PUT /api/prueba/update/:id
 // @access solo Admin

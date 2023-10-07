@@ -21,7 +21,7 @@ const getAllTests = async (req, res, next) => {
             where: {
                 estado: state
             },
-            attributes: ['id', 'nombre', 'semestre'],
+            attributes: ['id', 'nombre', 'semestre', 'estado'],
             include: {
                 model: Competencia,
                 attributes: ['nombre']
@@ -74,23 +74,9 @@ const getTestId = async (req, res, next) => {
 const createTest = async (req, res, next) => {
 
     // Obtenemos los datos de el estudiante a crear
-    const {nombre, descripcion, semestre, duracion, competencias, total_preguntas, valoresGenericas, valoresEspecificas} = req.body;
+    const { nombre, descripcion, semestre, duracion, total_preguntas } = req.body;
 
     try{
-
-        // Validamos los datos obtenidos
-
-        const regexNum = /^[0-9]+$/;
-        const regexData = /^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/;
-
-        if(!Array.isArray(competencias) || competencias.length === 0 || !regexData.test(nombre) || !regexNum.test(semestre) || 
-            !regexNum.test(duracion) || !regexNum.test(total_preguntas)){
-            return res.status(400).json({error: 'La sintaxis de los datos es incorrecta'});
-        }
-
-        if(valoresGenericas.length === 0 && valoresEspecificas.length === 0){
-            return res.status(400).json({error: 'Se debe seleccionar por lo menos una competencia'});
-        }
 
         // Validamos que el nombre sea único
         const existTest = await Prueba.findOne({
@@ -100,72 +86,8 @@ const createTest = async (req, res, next) => {
         })
 
         if(existTest){
-            return res.status(400).json({error: `El nombre de prueba ${nombre} ya se encuentra registrado`});
+            return res.status(400).json({error: `El nombre de prueba: ${nombre}, ya se encuentra registrado`});
         }
-
-        // Variables de control para la cantidad de preguntas y valor por categoría
-        let total_preguntas_categorias = 0;
-        let valor_total_categorias = 0;
-
-        // Validamos que los datos ingresados para las categotrias 
-        // de la competencia generica sean correctos (si aplica)
-        if(valoresGenericas && valoresGenericas.length > 0){
-
-            const dataCategoriasGenericas = validateCategories(valoresGenericas, total_preguntas);
-                
-            total_preguntas_categorias += dataCategoriasGenericas[0];
-            valor_total_categorias += dataCategoriasGenericas[1];
-            
-        }
-
-        // Validamos que los datos ingresados para las categotrias 
-        // de la competencia especifica sean correctos (si aplica)
-        if(valoresEspecificas && valoresEspecificas.length > 0){
-
-            const dataCategoriasEspecificas = validateCategories(valoresEspecificas, total_preguntas);
-
-            total_preguntas_categorias += dataCategoriasEspecificas[0];
-            valor_total_categorias += dataCategoriasEspecificas[1];
-
-        }
-
-        // Validamos la cantidad total de preguntas
-        if(total_preguntas_categorias > total_preguntas || total_preguntas_categorias < total_preguntas){
-            return res.status(400).json({error: 'El total de preguntas por categoria no coincide con el total especificado para la prueba'});
-        }
-
-        // Validamos el valor total de las categorias
-        if(valor_total_categorias > 100 || valor_total_categorias < 100){
-            return res.status(400).json({error: 'El valor total de las categorias no coincide con el 100% designado'});
-        }
-
-        // Validamos la cantidad de preguntas por competencia generica ingresadas no supere las disponibles
-        if(valoresGenericas && valoresGenericas.length > 0){
-
-            const isGenValid = await validCantQuestions(valoresGenericas, semestre);
-
-            // Validamos que la cantidad de preguntas solicitadas no supere
-            // las actualmente disponibles
-            if(typeof isGenValid !== 'boolean'){
-                return res.status(400).json({error: `La cantidad de preguntas solicitadas del ${semestre} semestre para la categoria ${isGenValid} supera las actualmente disponibles`});
-            }
-
-        }
-
-        // Validamos la cantidad de preguntas por competencia especifica ingresadas no supere
-        // las disponibles
-        if(valoresEspecificas && valoresEspecificas.length > 0){
-
-            const isEspValid = await validCantQuestions(valoresEspecificas, semestre);
-
-            // Validamos que la cantidad de preguntas solicitadas no supere
-            // las actualmente disponibles
-            if(typeof isEspValid !== 'boolean'){
-                return res.status(400).json({error: `La cantidad de preguntas solicitadas del ${semestre} semestre para la categoria ${isEspValid} supera las actualmente disponibles`});
-            }
-
-        }
-
 
         // Incializamos la transacción
         await sequelize.transaction(async (t) => {
@@ -179,64 +101,109 @@ const createTest = async (req, res, next) => {
                 total_preguntas
             }, {transaction: t});
 
-            // Creamos la relacion con competencia 
+            res.status(200).json(prueba);
 
-            for (const competencia_id of competencias) {
+        });
+
+
+    }catch(error){
+        next(new Error(`Ocurrio un problema al crear la prueba: ${error.message}`));
+    }
+
+};
+
+
+/* --------- asignCompetences function -------------- */
+
+const asignCompetences = async (req, res, next) => {
+
+    // Obtenemos los datos de el estudiante a crear
+    const { pruebaId, competencias } = req.body;
+
+    try{
+
+        const errorMessage = 'El formato de las competencias por asignar no es correcto';
+
+        if (!Array.isArray(competencias)) return res.status(400).json({ error: errorMessage });
+
+        if (!competencias.every(competencia => typeof competencia === 'number')) return res.status(400).json({ error: errorMessage });
+
+        // Incializamos la transacción
+        await sequelize.transaction(async (t) => {
+
+            // Creamos las relaciones con competencias
+            for (const competencia_id of competencias){
+
+                await PruebaCompetencia.create({
+                    prueba_id: pruebaId,
+                    competencia_id
+                }, {transaction: t});
+
+            }
+
+            res.status(200).json({ message: "La asignación de competencias a la prueba fue realizada con éxito" });
+
+        });
+
+
+    }catch(error){
+        next(new Error(`Ocurrió un problema al asignar las competencias de la prueba: ${error.message}`));
+    }
+
+};
+
+
+/* --------- asignValueCategories function -------------- */
+
+const asignValueCategories = async (req, res, next) => {
+
+    // Obtenemos los datos de el estudiante a crear
+    const { pruebaId, valorCategorias, competencias, total_preguntas } = req.body;
+
+    try{
+
+        const errorMessage = 'El formato de configuración de las categorias por asignar no es correcto';
+
+        if (!Array.isArray(valorCategorias)) return res.status(400).json({ error: errorMessage });
+
+        if (!valorCategorias.every(subArr => Array.isArray(subArr) && 
+            subArr.every(valor => typeof valor === 'object' && !Array.isArray(valor) && valor !== null))) {
+            return res.status(400).json({ error: errorMessage });
+        }
+
+        if (competencias.length !== valorCategorias.length) return res.status(400).json({ error: "La cantidad de valores a configurar no coincide con el número de competencias especificadas" });
+
+
+        // Variables de control para la cantidad de preguntas y valor por categoría
+        let total_preguntas_categorias = 0;
+        let valor_total_categorias = 0;
+
+        valorCategorias.forEach(competencia => {
+
+            
+
+        });
+
+        // Incializamos la transacción
+        await sequelize.transaction(async (t) => {
+
+            // Creamos las relaciones con competencias
+            for (const competencia_id of competencias){
 
                 await PruebaCompetencia.create({
                     prueba_id: prueba.id,
                     competencia_id
                 }, {transaction: t});
-                
-            }
-
-            // Creamos la relacion con categoria
-
-            if(valoresGenericas && valoresGenericas.length > 0){
-
-                for(const categoria_config of valoresGenericas){
-
-                    const id_categoria = categoria_config[0];
-                    const cant_preguntas_categoria = categoria_config[1];
-
-                    await ConfiguracionCategoria.create({
-                        cantidad_preguntas: categoria_config[1],
-                        valor_categoria: categoria_config[2],
-                        prueba_id: prueba.id,
-                        categoria_id: categoria_config[0]
-                    }, {transaction: t});
-
-                    createTestQuestion(prueba.id, id_categoria, cant_preguntas_categoria, semestre, t);
-                }
 
             }
 
-            if(valoresEspecificas && valoresEspecificas.length > 0){
-
-                for(const categoria_config of valoresEspecificas){
-
-                    const id_categoria = categoria_config[0];
-                    const cant_preguntas_categoria = categoria_config[1];
-
-                    await ConfiguracionCategoria.create({
-                        cantidad_preguntas: categoria_config[1],
-                        valor_categoria: categoria_config[2],
-                        prueba_id: prueba.id,
-                        categoria_id: categoria_config[0]
-                    }, {transaction: t});
-
-                    createTestQuestion(prueba.id, id_categoria, cant_preguntas_categoria, semestre, t);
-                }
-
-            }
+            res.status(200).json({ message: "La asignación de competencias a la prueba fue realizada con éxito" });
 
         });
 
-        res.status(200).json('Prueba creada exitosamente');
-
 
     }catch(error){
-        next(new Error(`Ocurrio un problema al crear la prueba: ${error.message}`));
+        next(new Error(`Ocurrió un problema al asignar las competencias de la prueba: ${error.message}`));
     }
 
 };
@@ -372,6 +339,8 @@ const testController = {
     getAllTests,
     getTestId, 
     createTest,
+    asignCompetences,
+    asignValueCategories,
     updateTest
 };
 
