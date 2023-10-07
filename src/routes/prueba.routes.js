@@ -34,15 +34,15 @@ router.post('/create', [extractToken, authJWT, isAdmin, validateTestData], testC
 
 
 // @desc Endpoint encargado de la asignación de competencias para una prueba
-// @route POST /api/prueba/asign/competences/:id
+// @route POST /api/prueba/asign/competences
 // @access solo Admin
-router.post('/asign/compentences', [extractToken, authJWT, isAdmin], );
+router.post('/asign/compentences', [extractToken, authJWT, isAdmin], testController.asignCompetences);
 
 
 // @desc Endpoint encargado de la configuración correspondiente de los valores asignados a las categorias de la prueba
-// @route POST /api/prueba/asign/valueCategories/:id
+// @route POST /api/prueba/asign/valueCategories
 // @access solo Admin
-router.post('/asign/valueCategories/:id', [extractToken, authJWT, isAdmin], );
+router.post('/asign/valueCategories', [extractToken, authJWT, isAdmin], testController.asignValueCategories);
 
 
 // @desc Endpoint encargado de la asignación de las preguntas a una prueba

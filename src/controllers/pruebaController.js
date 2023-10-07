@@ -124,7 +124,7 @@ const asignCompetences = async (req, res, next) => {
 
         const errorMessage = 'El formato de las competencias por asignar no es correcto';
 
-        if (!Array.isArray(competencias)) return res.status(400).json({ error: errorMessage });
+        if (!Array.isArray(competencias) || competencias?.length === 0) return res.status(400).json({ error: errorMessage });
 
         if (!competencias.every(competencia => typeof competencia === 'number')) return res.status(400).json({ error: errorMessage });
 
@@ -178,13 +178,11 @@ const asignValueCategories = async (req, res, next) => {
         let total_preguntas_categorias = 0;
         let valor_total_categorias = 0;
 
-        valorCategorias.forEach(competencia => {
+        const categorias = valorCategorias.flat();
 
-            
+        res.status(200).json(categorias);
 
-        });
-
-        // Incializamos la transacción
+        /*// Incializamos la transacción
         await sequelize.transaction(async (t) => {
 
             // Creamos las relaciones con competencias
@@ -199,7 +197,7 @@ const asignValueCategories = async (req, res, next) => {
 
             res.status(200).json({ message: "La asignación de competencias a la prueba fue realizada con éxito" });
 
-        });
+        });*/
 
 
     }catch(error){

@@ -376,7 +376,7 @@ const actualizarPregunta = async (req, res, next) => {
             texto_pregunta,
             semestre,
             opciones: JSON.stringify(opciones),
-            estado,
+            estado: Boolean(parseInt(estado)),
             respuesta,
             categoria_id
         });
