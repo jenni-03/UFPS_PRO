@@ -1,14 +1,14 @@
-const Pregunta = require('../models/Pregunta');
-const Categoria = require('../models/Categoria');
+import Pregunta from '../models/Pregunta.js';
+import Categoria from '../models/Categoria.js';
 
 
 /** Función encargada de los valores ingresados por categoria coincidan con los totales especificados
  *  por el usuario
  */
-const validateCategories = (valoresCategoria, total_preguntas) => {
+export const validateCategories = (valoresCategoria, total_preguntas) => {
 
-    let total_preguntas_genericas = 0;
-    let valor_total_genericas = 0
+    let total_preguntas_categoria = 0;
+    let valor_total_categoria = 0
 
     try{
 
@@ -30,12 +30,12 @@ const validateCategories = (valoresCategoria, total_preguntas) => {
                 throw new Error('El valor porcentual por categoria no puede superar el 100%');
             }
         
-            total_preguntas_genericas += preguntas_categoria;
-            valor_total_genericas += valor_categoria;
+            total_preguntas_categoria += preguntas_categoria;
+            valor_total_categoria += valor_categoria;
         
         }
 
-        return [total_preguntas_genericas, valor_total_genericas];
+        return [total_preguntas_categoria, valor_total_categoria];
 
     }catch(error){
         throw new Error(`Error al validar los datos obtenidos por las categorias: ${error.message}`);
@@ -47,7 +47,7 @@ const validateCategories = (valoresCategoria, total_preguntas) => {
 /** Función encargada de validar que el valor porcentual por categoria coincida con los limites 
  *  establecidos
  */
-const validate_percentage_categories = (valoresCategoria) => {
+export const validate_percentage_categories = (valoresCategoria) => {
 
     let valor_total_categorias = 0;
 
@@ -79,7 +79,7 @@ const validate_percentage_categories = (valoresCategoria) => {
 /** Función encargada de validar que la cantidad de preguntas por categoria cumpla con la 
  *  demanda establecida en la prueba
  */
-const validCantQuestions = async (valoresCategoria, semestre) => {
+export const validCantQuestions = async (valoresCategoria, semestre) => {
 
     try{
 
@@ -113,10 +113,4 @@ const validCantQuestions = async (valoresCategoria, semestre) => {
         throw new Error(`Error al validar la cantidad de preguntas por categoria: ${error.message}`);
     }
 
-};
-
-module.exports = {
-    validateCategories,
-    validCantQuestions,
-    validate_percentage_categories
 };
