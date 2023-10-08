@@ -66,12 +66,6 @@ const QuestionSchema = z.object({
         .min(1, { message: errors.RES_MIN_ERROR })
         .max(300, { message: errors.RES_MAX_ERROR }),
 
-        estado: z
-        .string({ 
-            invalid_type_error: 'El estado solo puede ser un valor booleano',
-            required_error: 'El estado de la pregunta es requerido'
-        }).length(1, { message: 'El error solo puede ser un caracter' }).regex(/^[01]$/, {message: 'El formato del estado no coincide' }),
-
         respuesta: z
         .string({
             invalid_type_error: 'La respuesta solo puede ser texto',
