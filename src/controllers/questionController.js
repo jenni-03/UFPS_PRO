@@ -356,7 +356,8 @@ const actualizarPregunta = async (req, res, next) => {
             return res.status(400).json({error: 'No se encuentra ninguna pregunta con el id especificado'});
         }
         
-        // Formateamos el arreglo con las opciones actuales
+        // Formateamos el arreglo con las opciones actuales y las nuevas
+        const new_options = JSON.parse(opciones);
         const options = JSON.parse(pregunta.opciones);
 
         // validamos que el numero de opciones recibidas sea igual a las disponibles
@@ -375,7 +376,7 @@ const actualizarPregunta = async (req, res, next) => {
         await pregunta.update({
             texto_pregunta,
             semestre,
-            opciones: JSON.stringify(opciones),
+            opciones: JSON.stringify(new_options),
             estado: Boolean(parseInt(estado)),
             respuesta,
             categoria_id

@@ -1,8 +1,9 @@
 import Prueba from '../models/Prueba.js';
 import Competencia  from '../models/Competencia.js';
+import Categoria from '../models/Categoria.js';
 import PruebaCompetencia from '../models/PruebaCompetencia.js';
 import ConfiguracionCategoria from '../models/ConfiguracionCategoria.js';
-import { validCantQuestions, validateCategories, validate_percentage_categories } from '../util/validateDataCategories.js';
+import { validCantQuestions, validate_percentage_categories } from '../util/validateDataCategories.js';
 import { createTestQuestion } from '../util/createTestQuestion.js';
 import sequelize from '../database/db.js';
 
@@ -124,6 +125,8 @@ const asignCompetences = async (req, res, next) => {
 
         const errorMessage = 'El formato de las competencias por asignar no es correcto';
 
+        if (competencias === undefined) return res.status(400).json({ error: 'Las competencias de la prueba son requeridas' });
+
         if (!Array.isArray(competencias) || competencias?.length === 0) return res.status(400).json({ error: errorMessage });
 
         if (!competencias.every(competencia => typeof competencia === 'number')) return res.status(400).json({ error: errorMessage });
@@ -158,11 +161,13 @@ const asignCompetences = async (req, res, next) => {
 const asignValueCategories = async (req, res, next) => {
 
     // Obtenemos los datos de el estudiante a crear
-    const { pruebaId, valorCategorias, competencias, total_preguntas } = req.body;
+    const { pruebaId, valorCategorias, competencias } = req.body;
 
     try{
 
         const errorMessage = 'El formato de configuración de las categorias por asignar no es correcto';
+
+        if (valorCategorias === undefined) return res.status(400).json({ error: 'La configuración de las categorias es requerida' });
 
         if (!Array.isArray(valorCategorias)) return res.status(400).json({ error: errorMessage });
 
@@ -173,6 +178,9 @@ const asignValueCategories = async (req, res, next) => {
 
         if (competencias.length !== valorCategorias.length) return res.status(400).json({ error: "La cantidad de valores a configurar no coincide con el número de competencias especificadas" });
 
+        // Obtenemos la prueba a la que se aplicara la configuración
+        const prueba = await Prueba.findByPk(pruebaId);
+
 
         // Variables de control para la cantidad de preguntas y valor por categoría
         let total_preguntas_categorias = 0;
@@ -180,16 +188,99 @@ const asignValueCategories = async (req, res, next) => {
 
         const categorias = valorCategorias.flat();
 
-        res.status(200).json(categorias);
+        // Verficamos los valores de cada una de las categorias
+        for(const categoria of categorias) {
 
-        /*// Incializamos la transacción
+            // Obtenemos la categoria y los datos a usar
+            const { id, nombre } = await Categoria.findByPk(categoria.categoria_id);
+            const cant_preguntas_necesarias = categoria.preguntas;
+            const semestre = prueba.semestre;
+            const total_prueba_preguntas = prueba.total_preguntas;
+
+            // Validamos que la cantidad de preguntas y el porcentaje no supere el total de la prueba
+            if (cant_preguntas_necesarias > total_prueba_preguntas){
+                return res.status(400).json({ error: 'La cantidad de preguntas por categoria no puede superar al total de preguntas de la prueba' })
+            }
+
+            if (categoria.valor > 100){
+                return res.status(400).json({ error: 'El valor porcentual por categoria no puede superar el 100%' });
+            }
+
+            // Validamos la cantidad de preguntas por categoria general ingresadas no supere las disponibles
+            const cant_preguntas_actuales = await validCantQuestions(semestre, id);
+
+            if (cant_preguntas_actuales < cant_preguntas_necesarias){
+                return res.status(400).json({error: `La cantidad de preguntas solicitadas del ${semestre} semestre para la categoria ${nombre} supera las actualmente disponibles`});
+            }
+
+            total_preguntas_categorias += categoria.preguntas;
+            valor_total_categorias += categoria.valor;
+
+        }
+
+        // Verificamos los valores globales de las categorias
+        if (total_preguntas_categorias > prueba.total_preguntas || total_preguntas_categorias < prueba.total_preguntas){
+            return res.status(400).json({error: 'El total de preguntas por categoria no coincide con el total especificado para la prueba'});
+        }
+
+        // Validamos el valor total de las categorias
+        if(valor_total_categorias > 100 || valor_total_categorias < 100){
+            return res.status(400).json({error: 'El valor total de las categorias no coincide con el 100% designado'});
+        }
+
+
+        // Incializamos la transacción
+        await sequelize.transaction(async (t) => {
+
+            for( const categoria of categorias ){
+
+                // Creamos las configuraciones para las categorias
+                await ConfiguracionCategoria.create({
+                    cantidad_preguntas: categoria.preguntas,
+                    valor_categoria: categoria.valor,
+                    prueba_id: prueba.id,
+                    categoria_id: categoria.categoria_id
+                }, {transaction: t});
+
+            }
+
+            res.status(200).json({ message: "La configuración de las categorias de la prueba fue establecida con éxito" });
+
+        });
+
+
+    }catch(error){
+        next(new Error(`Ocurrió un problema al asignar la configuración de las categorias a la prueba: ${error.message}`));
+    }
+
+};
+
+
+/* --------- asignQuestions function -------------- */
+
+const asignQuestions = async (req, res, next) => {
+
+    // Obtenemos los datos de el estudiante a crear
+    const { pruebaId, competencias } = req.body;
+
+    try{
+
+        const errorMessage = 'El formato de las competencias por asignar no es correcto';
+
+        if (competencias === undefined) return res.status(400).json({ error: 'Las competencias de la prueba son requeridas' });
+
+        if (!Array.isArray(competencias) || competencias?.length === 0) return res.status(400).json({ error: errorMessage });
+
+        if (!competencias.every(competencia => typeof competencia === 'number')) return res.status(400).json({ error: errorMessage });
+
+        // Incializamos la transacción
         await sequelize.transaction(async (t) => {
 
             // Creamos las relaciones con competencias
             for (const competencia_id of competencias){
 
                 await PruebaCompetencia.create({
-                    prueba_id: prueba.id,
+                    prueba_id: pruebaId,
                     competencia_id
                 }, {transaction: t});
 
@@ -197,7 +288,7 @@ const asignValueCategories = async (req, res, next) => {
 
             res.status(200).json({ message: "La asignación de competencias a la prueba fue realizada con éxito" });
 
-        });*/
+        });
 
 
     }catch(error){
