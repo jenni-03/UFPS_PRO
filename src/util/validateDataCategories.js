@@ -23,7 +23,7 @@ export const validate_percentage_categories = (valoresCategoria) => {
         return valor_categoria;
 
     }catch(error){
-        throw new Error(`Error al actualizar los porcentajes de las categorias: ${error.message}`);
+        throw new Error(`${error.message}`);
     }
 
 };
@@ -109,7 +109,7 @@ export const asignValueCategories = async ( pruebaId, valorCategorias, competenc
         }
 
     }catch(error){
-        throw new Error(`Al asignar la configuración de las categorias a la prueba - ${error.message}`);
+        throw new Error(`${error.message}`);
     }
 
 };
@@ -136,7 +136,7 @@ const validCantQuestions = async (semestre, categoria_id) => {
         return numero_preguntas.length;
 
     }catch(error){
-        throw new Error(`Error al validar la cantidad de preguntas por categoria: ${error.message}`);
+        throw new Error(`${error.message}`);
     }
 
 }

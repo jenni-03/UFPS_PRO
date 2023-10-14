@@ -21,7 +21,7 @@ const QuestionSchema = z.object({
                 required_error: 'El texto de la pregunta es requerido'
             })
             .min(10, { message: 'El texto de la pregunta es muy corta' })
-            .max(350, { message: 'El texto de la pregunta supera la cant. de caracteres permitida' }),
+            .max(850, { message: 'El texto de la pregunta supera la cant. de caracteres permitida' }),
 
         semestre: z
             .string({
@@ -40,7 +40,7 @@ const QuestionSchema = z.object({
                 required_error: errors.REQ_RES_ERROR
             })
             .min(1, { message: errors.RES_MIN_ERROR })
-            .max(300, { message: errors.RES_MAX_ERROR }),
+            .max(600, { message: errors.RES_MAX_ERROR }),
 
         B: z
             .string({
@@ -48,7 +48,7 @@ const QuestionSchema = z.object({
                 required_error: errors.REQ_RES_ERROR
             })
             .min(1, { message: errors.RES_MIN_ERROR })
-            .max(300, { message: errors.RES_MAX_ERROR }),
+            .max(600, { message: errors.RES_MAX_ERROR }),
 
         C: z
             .string({
@@ -56,7 +56,7 @@ const QuestionSchema = z.object({
                 required_error: errors.REQ_RES_ERROR
             })
             .min(1, { message: errors.RES_MIN_ERROR })
-            .max(300, { message: errors.RES_MAX_ERROR }),
+            .max(600, { message: errors.RES_MAX_ERROR }),
 
         D: z
             .string({
@@ -64,7 +64,7 @@ const QuestionSchema = z.object({
                 required_error: errors.REQ_RES_ERROR
             })
             .min(1, { message: errors.RES_MIN_ERROR })
-            .max(300, { message: errors.RES_MAX_ERROR }),
+            .max(600, { message: errors.RES_MAX_ERROR }),
 
         respuesta: z
             .string({

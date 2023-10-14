@@ -30,7 +30,7 @@ export const asignQuestions = async (categorias, preguntas, pruebaId, semestre, 
         }
 
     }catch(error){
-        throw new Error(`Al asignar las preguntas de la prueba - ${error.message}`);
+        throw new Error(`${error.message}`);
     }
 
 };
@@ -69,7 +69,7 @@ const createTestQuestion = async (id_prueba, id_categoria, cant_preguntas_catego
         }
         
     } catch (error) {
-        throw new Error(`Error al agregar las pregunta a la prueba: ${error.message}`)
+        throw new Error(`${error.message}`)
     }
 
 }
@@ -104,7 +104,7 @@ export const asignCompetences = async (pruebaId, competencias, t) => {
         }
 
     }catch(error){
-        throw new Error(`Al asignar las competencias de la prueba - ${error.message}`);
+        throw new Error(`${error.message}`);
     }
 
 };

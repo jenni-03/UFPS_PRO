@@ -1,11 +1,12 @@
-const {Router} = require('express');
+import { Router } from 'express';
 
 // Importamos las funciones del controlador
-const convocatoriaController = require('../controllers/convocatoriaController');
+import convocatoriaController from '../controllers/convocatoriaController.js';
 
 // Importamos los middlewares de autenticación
-const authJWT = require('../middlewares/verifyJWT');
-const isAdmin = require('../middlewares/isAdmin');
+import extractToken from '../middlewares/extractToken.js';
+import verifyJWT from '../middlewares/verifyJWT.js';
+import isAdmin from '../middlewares/isAdmin.js';
 const fileupload = require('express-fileupload');
 
 // Inicializamos el router
