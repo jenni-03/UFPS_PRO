@@ -360,7 +360,7 @@ const actualizarPregunta = async (req, res, next) => {
         const options = JSON.parse(pregunta.opciones);
 
         // validamos que el numero de opciones recibidas sea igual a las disponibles
-        if(options.length !== opciones.length){
+        if(options.length !== new_options.length){
             return res.status(400).json({error: 'La cantidad de opciones ingresadas no corresponde con la actual'});
         }
 
