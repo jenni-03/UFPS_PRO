@@ -325,7 +325,7 @@ const getQuestionById = async (req, res, next) => {
             estado: pregunta.estado,
             semestre: pregunta.semestre,
             categoria: pregunta.categoria.nombre,
-            imageFile: pregunta.imagen ? pregunta.imagen.url : ''
+            imageFile: pregunta.imagen !== null ? pregunta.imagen.url : ''
         });
 
     }catch(err){
