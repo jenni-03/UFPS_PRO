@@ -356,7 +356,7 @@ const actualizarPregunta = async (req, res, next) => {
         }
         
         // Formateamos el arreglo con las opciones actuales y las nuevas
-        const new_options = JSON.parse(opciones);
+        const new_options = JSON.stringify(opciones).replaceAll('"', "").split(",");
         const options = JSON.parse(pregunta.opciones);
 
         // validamos que el numero de opciones recibidas sea igual a las disponibles
