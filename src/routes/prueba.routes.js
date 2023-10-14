@@ -46,9 +46,9 @@ router.post('/asign/valueCategories', [extractToken, authJWT, isAdmin], testCont
 
 
 // @desc Endpoint encargado de la asignación de las preguntas a una prueba
-// @route POST /api/prueba/asign/questions/:id
+// @route POST /api/prueba/asign/questions
 // @access solo Admin
-router.post('/asign/questions/:id', [extractToken, authJWT, isAdmin], );
+router.post('/asign/questions', [extractToken, authJWT, isAdmin], testController.asignQuestions);
 
 
 // @desc Endpoint encargado de la actualización de una prueba por su id

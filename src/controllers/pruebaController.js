@@ -261,32 +261,27 @@ const asignValueCategories = async (req, res, next) => {
 const asignQuestions = async (req, res, next) => {
 
     // Obtenemos los datos de el estudiante a crear
-    const { pruebaId, competencias } = req.body;
+    const { categorias, preguntas, pruebaId, semestre } = req.body;
 
     try{
 
-        const errorMessage = 'El formato de las competencias por asignar no es correcto';
+        const errorMessage = 'El formato de los datos requeridos para asignar las preguntas no es correcto';
 
-        if (competencias === undefined) return res.status(400).json({ error: 'Las competencias de la prueba son requeridas' });
+        if (categorias === undefined || preguntas === undefined) return res.status(400).json({ error: errorMessage });
 
-        if (!Array.isArray(competencias) || competencias?.length === 0) return res.status(400).json({ error: errorMessage });
+        if (!Array.isArray(categorias) || !Array.isArray(preguntas)) return res.status(400).json({ error: errorMessage });
 
-        if (!competencias.every(competencia => typeof competencia === 'number')) return res.status(400).json({ error: errorMessage });
+        if (categorias.length !== preguntas.length) return res.status(400).json({ error: errorMessage });
 
         // Incializamos la transacción
         await sequelize.transaction(async (t) => {
 
-            // Creamos las relaciones con competencias
-            for (const competencia_id of competencias){
-
-                await PruebaCompetencia.create({
-                    prueba_id: pruebaId,
-                    competencia_id
-                }, {transaction: t});
-
+            // Comenzamos la asignación de preguntas por cada categoria
+            for (let i = 0; i < categorias.length; i++) {
+                createTestQuestion(pruebaId, categorias[i], preguntas[i], semestre);
             }
 
-            res.status(200).json({ message: "La asignación de competencias a la prueba fue realizada con éxito" });
+            res.status(200).json({ message: "La asignación de preguntas a la prueba fue realizada con éxito"});
 
         });
 
@@ -306,7 +301,7 @@ const updateTest = async (req, res, next) => {
     const {id} = req.params;
 
     // Obtenemos los datos a actualizar
-    const {nombre, descripcion, duracion, estado, valoresGenericas, valoresEspecificas} = req.body;
+    const { nombre, descripcion, duracion, estado, valoresCategorias } = req.body;
 
     try{
 
@@ -327,22 +322,10 @@ const updateTest = async (req, res, next) => {
 
         // Validamos que los datos ingresados para las categotrias 
         // de la competencia generica sean correctos (si aplica)
-        if(valoresGenericas && valoresGenericas.length > 0){
-
-            const dataCategoriasGenericas = validate_percentage_categories(valoresGenericas);
+        for (const valores of valoresCategorias){
                 
-            valor_total_categorias += dataCategoriasGenericas;
+            valor_total_categorias += validate_percentage_categories(valores);;
             
-        }
-
-        // Validamos que los datos ingresados para las categotrias 
-        // de la competencia especifica sean correctos (si aplica)
-        if(valoresEspecificas && valoresEspecificas.length > 0){
-
-            const dataCategoriasEspecificas = validate_percentage_categories(valoresEspecificas);
-
-            valor_total_categorias += dataCategoriasEspecificas;
-
         }
 
         // Validamos el valor total de las categorias
@@ -430,6 +413,7 @@ const testController = {
     createTest,
     asignCompetences,
     asignValueCategories,
+    asignQuestions,
     updateTest
 };
 

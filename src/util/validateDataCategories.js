@@ -6,25 +6,17 @@ import Pregunta from '../models/Pregunta.js';
  */
 export const validate_percentage_categories = (valoresCategoria) => {
 
-    let valor_total_categorias = 0;
-
     try{
 
-        for(const categoria_config of valoresCategoria){
-
-            const valor_categoria = categoria_config[2];
+        const valor_categoria = valoresCategoria[1];
         
-            // Validamos que el porcentaje por cada categoria
-            // NO supere el total (100%)
-            if(valor_categoria > 100){
-                throw new Error('El valor porcentual por categoria no puede superar el 100%');
-            }
-        
-            valor_total_categorias += valor_categoria;
-        
+        // Validamos que el porcentaje por cada categoria
+        // NO supere el total (100%)
+        if(valor_categoria > 100){
+            throw new Error('El valor porcentual por categoria no puede superar el 100%');
         }
 
-        return valor_total_categorias;
+        return valor_categoria;
 
     }catch(error){
         throw new Error(`Error al actualizar los porcentajes de las categorias: ${error.message}`);

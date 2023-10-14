@@ -1,7 +1,8 @@
 import Pregunta from '../models/Pregunta.js';
 import PreguntaPrueba from '../models/PreguntaPrueba.js';
+import lodash from 'lodash';
 
-export const createTestQuestion = async (id_prueba, id_categoria, cant_preguntas_categoria, semestre, transaction) => {
+export const createTestQuestion = async (id_prueba, id_categoria, cant_preguntas_categoria, semestre) => {
     
     try {
 
@@ -9,29 +10,14 @@ export const createTestQuestion = async (id_prueba, id_categoria, cant_preguntas
         const questions = await Pregunta.findAll({
             where: {
                 semestre,
-                categoria_id: id_categoria
+                categoria_id: id_categoria,
+                estado: 1
             }
         })
 
-        while(cant_preguntas_categoria > 0){
+        const questions_to_be_assigned = lodash.sampleSize(questions, cant_preguntas_categoria);
 
-            //generamos un numero aleatorio, para seleccionar una pregunta
-            const index_question = Math.floor(Math.random() * (questions.length));
-
-            //obtenemos la pregunta
-            const question = questions[index_question];
-
-            //validamos si la pregunta ya ha sido agregada a la prueba
-            const existQuestion = await PreguntaPrueba.findOne({
-                where: {
-                    pregunta_id: question.id,
-                    prueba_id: id_prueba
-                }
-            })
-
-            if(existQuestion){
-                continue;
-            }
+        for (const question of questions_to_be_assigned) {
 
             //agregamos la pregunta a la prueba
             await PreguntaPrueba.create({
@@ -39,11 +25,10 @@ export const createTestQuestion = async (id_prueba, id_categoria, cant_preguntas
                 prueba_id: id_prueba
             })
 
-            cant_preguntas_categoria--;
         }
         
     } catch (error) {
-        throw new Error(`Error al agregar la pregunta a la prueba: ${error.message}`)
+        throw new Error(`Error al agregar las pregunta a la prueba: ${error.message}`)
     }
 
 }
