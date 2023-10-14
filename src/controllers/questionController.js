@@ -391,7 +391,16 @@ const actualizarPregunta = async (req, res, next) => {
             // Formateamos el nombre
             const imageName = imagen.filename.split('.')[0];
 
-            result = pregunta.imagen === null ? await uploadImage(req.file.path, imageName) : await updateFile(req.file.path, pregunta.imagen.public_id);
+            console.log(pregunta.imagen);
+
+            // Subimos la nueva imagen
+            if (pregunta.imagen === null){
+                result = await uploadImage(req.file.path, imageName);
+                console.log('Esta creando');
+            }else{
+                result = await updateFile(req.file.path, pregunta.imagen.public_id);
+                console.log('Esta actualizando');
+            }
 
             // Definimos los atributos a almacenar
             image = {
