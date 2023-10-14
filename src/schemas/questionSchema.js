@@ -16,79 +16,79 @@ const QuestionSchema = z.object({
     body: z.object({
 
         texto_pregunta: z
-        .string({
-            invalid_type_error: 'La pregunta solo puede ser texto',
-            required_error: 'El texto de la pregunta es requerido'
-        })
-        .min(10, { message: 'El texto de la pregunta es muy corta' })
-        .max(350, { message: 'El texto de la pregunta supera la cant. de caracteres permitida' }),
+            .string({
+                invalid_type_error: 'La pregunta solo puede ser texto',
+                required_error: 'El texto de la pregunta es requerido'
+            })
+            .min(10, { message: 'El texto de la pregunta es muy corta' })
+            .max(350, { message: 'El texto de la pregunta supera la cant. de caracteres permitida' }),
 
         semestre: z
-        .string({
-            required_error: 'El semestre de la pregunta es requerido'
-        })
-        .regex(/^[1-9]|10$/).refine(value => {
-            const numero = parseInt(value, 10);
-            return numero >= 1 && numero <= 10;
-        }, {
-            message: 'El semestre debe estar entre 1 y 10',
-        }),
+            .string({
+                required_error: 'El semestre de la pregunta es requerido'
+            })
+            .regex(/^[1-9]|10$/).refine(value => {
+                const numero = parseInt(value, 10);
+                return numero >= 1 && numero <= 10;
+            }, {
+                message: 'El semestre debe estar entre 1 y 10',
+            }),
 
         A: z
-        .string({
-            invalid_type_error: errors.TYPE_RES_ERROR,
-            required_error: errors.REQ_RES_ERROR
-        })
-        .min(1, { message: errors.RES_MIN_ERROR })
-        .max(300, { message: errors.RES_MAX_ERROR }),
+            .string({
+                invalid_type_error: errors.TYPE_RES_ERROR,
+                required_error: errors.REQ_RES_ERROR
+            })
+            .min(1, { message: errors.RES_MIN_ERROR })
+            .max(300, { message: errors.RES_MAX_ERROR }),
 
         B: z
-        .string({
-            invalid_type_error: errors.TYPE_RES_ERROR,
-            required_error: errors.REQ_RES_ERROR
-        })
-        .min(1, { message: errors.RES_MIN_ERROR })
-        .max(300, { message: errors.RES_MAX_ERROR }),
+            .string({
+                invalid_type_error: errors.TYPE_RES_ERROR,
+                required_error: errors.REQ_RES_ERROR
+            })
+            .min(1, { message: errors.RES_MIN_ERROR })
+            .max(300, { message: errors.RES_MAX_ERROR }),
 
         C: z
-        .string({
-            invalid_type_error: errors.TYPE_RES_ERROR,
-            required_error: errors.REQ_RES_ERROR
-        })
-        .min(1, { message: errors.RES_MIN_ERROR })
-        .max(300, { message: errors.RES_MAX_ERROR }),
+            .string({
+                invalid_type_error: errors.TYPE_RES_ERROR,
+                required_error: errors.REQ_RES_ERROR
+            })
+            .min(1, { message: errors.RES_MIN_ERROR })
+            .max(300, { message: errors.RES_MAX_ERROR }),
 
         D: z
-        .string({
-            invalid_type_error: errors.TYPE_RES_ERROR,
-            required_error: errors.REQ_RES_ERROR
-        })
-        .min(1, { message: errors.RES_MIN_ERROR })
-        .max(300, { message: errors.RES_MAX_ERROR }),
+            .string({
+                invalid_type_error: errors.TYPE_RES_ERROR,
+                required_error: errors.REQ_RES_ERROR
+            })
+            .min(1, { message: errors.RES_MIN_ERROR })
+            .max(300, { message: errors.RES_MAX_ERROR }),
 
         respuesta: z
-        .string({
-            invalid_type_error: 'La respuesta solo puede ser texto',
-            required_error: 'La respuesta de la pregunta es requerida'
-        })
-        .length(1, { message: 'El formato de la respuesta no coincide' }),
+            .string({
+                invalid_type_error: 'La respuesta solo puede ser texto',
+                required_error: 'La respuesta de la pregunta es requerida'
+            })
+            .length(1, { message: 'El formato de la respuesta no coincide' }),
 
-        imagen: z
-        .object({
-            url: z.string().url(),
-            public_id: z.string()
-        }),
+        estado: z
+            .string({
+                invalid_type_error: 'El estado solo puede ser un valor booleano',
+                required_error: 'El estado de la pregunta es requerido'
+            }).length(1, {message: 'El error solo puede ser un caracter'}).regex(/^[01]$/, {message: 'El formato del estado no coincide'}),
         
         categoria_id: z
-        .string({
-            required_error: 'El identificador de la categoria es requerido'
-        })
-        .regex(/^\d+$/, { message: 'El identificador de la categoria solo puede ser un numero' }).refine(value => {
-            const numero = parseInt(value, 10);
-            return numero > 0;
-        }, {
-            message: 'El identificador de la categoria no debe ser 0 o negativo',
-        })
+            .string({
+                required_error: 'El identificador de la categoria es requerido'
+            })
+            .regex(/^\d+$/, { message: 'El identificador de la categoria solo puede ser un numero' }).refine(value => {
+                const numero = parseInt(value, 10);
+                return numero > 0;
+            }, {
+                message: 'El identificador de la categoria no debe ser 0 o negativo',
+            })
 
     }).partial(),
 

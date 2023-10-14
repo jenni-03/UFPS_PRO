@@ -329,7 +329,6 @@ const getQuestionById = async (req, res, next) => {
         });
 
     }catch(err){
-        console.log(err);
         next(`Ocurrio un problema al obtener los datos de la pregunta especificada: ${err.message}`);
     }
 
@@ -389,7 +388,10 @@ const actualizarPregunta = async (req, res, next) => {
             let result;
             let image;
 
-            result = await updateFile(req.file.path, pregunta.imagen.public_id);
+            // Formateamos el nombre
+            const imageName = imagen.filename.split('.')[0];
+
+            result = pregunta.imagen === null ? await uploadImage(req.file.path, imageName) : await updateFile(req.file.path, pregunta.imagen.public_id);
 
             // Definimos los atributos a almacenar
             image = {
