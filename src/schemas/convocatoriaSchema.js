@@ -23,15 +23,13 @@ const convocatorySchema = z.object({
             .max(450, { message: 'La descripción de la convocatoria supera la cant. de caracteres permitidos' }),
 
         fecha_inicio: z
-            .date({
-                invalid_type_error: 'Por favor ingresa un formato de fecha valido',
-                required_error: 'La fecha de inicio de la convocatoria es requerida'
+            .string().refine(value => /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(value), {
+                message: 'Por favor ingresa una fecha de inicio en el formato YYYY-MM-DD HH:mm',
             }),
 
         fecha_fin: z
-            .date({
-                invalid_type_error: 'Por favor ingresa un formato de fecha valido',
-                required_error: 'La fecha de finalización de la convocatoria es requerida'
+            .string().refine(value => /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(value), {
+                message: 'Por favor ingresa una fecha de finalización en el formato YYYY-MM-DD HH:mm',
             }),
         
         estado: z

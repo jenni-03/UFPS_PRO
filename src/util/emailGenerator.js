@@ -12,7 +12,7 @@ import logger from '../middlewares/logger.js';
  * @param {string} typeEmail 
  * @param {string} convocatoria_name 
  */
-const generateEmail = async (userName, userEmail, userPassword, typeEmail, convocatoria_name) => {
+const generateEmail = async (userName, userEmail, userPassword='', typeEmail, convocatoria_name) => {
 
     // Crear un objeto de configuración con las credenciales
     let config = {
@@ -39,7 +39,7 @@ const generateEmail = async (userName, userEmail, userPassword, typeEmail, convo
         }
     });
 
-    const response = typeEmail === 'Notificar' ? notification_response(userName, convocatoria_name).body : register_response(userName, userEmail, userPassword, convocatoria_name).body;
+    const response = typeEmail === 'Notificar' ? notification_response(userName, convocatoria_name) : register_response(userName, userEmail, userPassword, convocatoria_name);
 
     // Generamos un HTML del email con el cuerpo proporcionado
     const emailBody = mailGenerator.generate(response);

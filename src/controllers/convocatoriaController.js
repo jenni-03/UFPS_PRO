@@ -141,7 +141,7 @@ const createConvocatoria = async (req, res, next) => {
                 const semesterRegex = /^\d+$/;
                 if(!semesterRegex.test(itemFila['Semestre'])) {
                     res.status(400);
-                    throw new Error('Semestre de estudiante invalido');
+                    throw new Error('No se aceptan semestres no validos');
                 }
 
                 const semestre = parseInt(itemFila['Semestre']);
@@ -155,7 +155,7 @@ const createConvocatoria = async (req, res, next) => {
                 const codeRegex = /^\d{7}$/;
                 if(!codeRegex.test(itemFila['Codigo'])) {
                     res.status(400);
-                    throw new Error('Codigo de estudiante invalido');
+                    throw new Error('No se permiten codigos de estudiantes no validos');
                 }
                 const codigo = itemFila['Codigo'];
 
@@ -203,19 +203,19 @@ const createConvocatoria = async (req, res, next) => {
                     }, {transaction: t});
 
                     // Enviamos correo de notificacion
-                    await generateCorreo(`${nombre} ${apellido}`, email, password, 'Notificar', convocatoria.nombre);
+                    await generateCorreo(`${nombre} ${apellido}`, email, 'Notificar', convocatoria.nombre);
 
                     return 1;
                 }
 
                 // Generamos la contraseña
-                const password = password_generator.generate({
+                const newPassword = password_generator.generate({
                     length: 15,
                     numbers: true
                 });
 
                 // Ciframos la contraseña
-                const hashedPassword = await encryptPasswd(password);
+                const hashedPassword = await encryptPasswd(newPassword);
 
                 return {
 
@@ -224,6 +224,7 @@ const createConvocatoria = async (req, res, next) => {
                     codigo,
                     email,
                     password: hashedPassword,
+                    noHashPassword: newPassword,
                     tipo: 'Estudiante',
                     semestre,
                     rol_id: 2
@@ -238,32 +239,48 @@ const createConvocatoria = async (req, res, next) => {
             // Filtramos a los estudiantes nuevos
             const newStudents = (await estudiantes).filter(student => student !== 1);
 
-            return newStudents;
+            // Ahora hasheamos la contraseña de los nuevos ingresados
+            const secured_students = await Promise.all(
+                
+                newStudents.map( async (student) => {
+
+                    const { noHashPassword, ...rest } = student;
+                    
+                    return rest;
+
+                })
+
+            );
+            
             
             // Registramos a los estudiantes nuevos
-            /*await Usuario.bulkCreate(newStudents);
+            const created_students = await Usuario.bulkCreate(secured_students, { returning: true, transaction: t });
 
             // Generamos la inscripción, contraseña y enviamos correo de registro
-            newStudents.forEach(async(estudiante) => {
+            for (let i = 0; i < created_students.length; i++) {
+
+                const student = created_students[i];
 
                 // Creamos la inscripción a la convocatoria
                 await Inscripcion.create({
-                    fecha_inscripcion: dayjs().toDate(),
-                    usuario_id: estudiante.id,
+                    fecha_inscripcion: new Date(dayjs().format('YYYY-MM-DD HH:mm')),
+                    usuario_id: student.id,
                     convocatoria_id: convocatoria.id
                 }, {transaction: t});
 
                 // Enviamos correo de confirmación de registro
-                await generateCorreo(`${nombre} ${apellido}`, email, password, 'Registro', convocatoria.nombre);
+                await generateCorreo(`${student.nombre} ${student.apellido}`, student.email, newStudents[i].noHashPassword, 'Registro', convocatoria.nombre);
+                
+            }
 
-            });*/
+            return created_students;
 
         });
 
-        // { message: `Se han registrado ${estudiantes} estudiantes satisfactoriamente para la convocatoria` }
-        res.status(200).json(result);
+        res.status(200).json({ message: `Se han registrado y/o notificado ${result.length} estudiantes satisfactoriamente para la convocatoria` });
 
     } catch (err) {
+        console.log(err);
         next(new Error(`Ocurrio un problema al intentar crear la convocatoria: ${err.message}`));
     }
 
