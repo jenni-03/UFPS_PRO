@@ -17,10 +17,6 @@ const Convocatoria = sequelize.define('convocatorias', {
         validate: {
             notEmpty: {
                 msg: 'El nombre de la competencia no puede ser vacio'
-            },
-            len:{
-                args: [5, 55],
-                msg: "El nombre de la competencia ha de contener minimo 5 caracteres"
             }
         }
     },
@@ -30,10 +26,6 @@ const Convocatoria = sequelize.define('convocatorias', {
         validate: {
             notEmpty: {
                 msg: "La descripcion de la competencia no puede ser vacia"
-            },
-            len:{
-                args: [20, 200],
-                msg: "La descripción de la competencia ha de tener un minimo de 20 caracteres"
             }
         }
     },

@@ -325,11 +325,10 @@ const getQuestionById = async (req, res, next) => {
             estado: pregunta.estado,
             semestre: pregunta.semestre,
             categoria: pregunta.categoria.nombre,
-            imageFile: pregunta.imagen ? pregunta.imagen.url : ''
+            imageFile: pregunta.imagen !== null ? JSON.parse(pregunta.imagen).url : ''
         });
 
     }catch(err){
-        console.log(err);
         next(`Ocurrio un problema al obtener los datos de la pregunta especificada: ${err.message}`);
     }
 
@@ -356,11 +355,12 @@ const actualizarPregunta = async (req, res, next) => {
             return res.status(400).json({error: 'No se encuentra ninguna pregunta con el id especificado'});
         }
         
-        // Formateamos el arreglo con las opciones actuales
+        // Formateamos el arreglo con las opciones actuales y las nuevas
+        const new_options = JSON.parse(opciones);
         const options = JSON.parse(pregunta.opciones);
 
         // validamos que el numero de opciones recibidas sea igual a las disponibles
-        if(options.length !== opciones.length){
+        if(options.length !== new_options.length){
             return res.status(400).json({error: 'La cantidad de opciones ingresadas no corresponde con la actual'});
         }
 
@@ -375,8 +375,8 @@ const actualizarPregunta = async (req, res, next) => {
         await pregunta.update({
             texto_pregunta,
             semestre,
-            opciones: JSON.stringify(opciones),
-            estado,
+            opciones: JSON.stringify(new_options),
+            estado: Boolean(parseInt(estado)),
             respuesta,
             categoria_id
         });
@@ -388,7 +388,17 @@ const actualizarPregunta = async (req, res, next) => {
             let result;
             let image;
 
-            result = await updateFile(req.file.path, pregunta.imagen.public_id);
+            // Formateamos el nombre
+            const imageName = imagen.filename.split('.')[0];
+
+            // Subimos la nueva imagen
+            if (pregunta.imagen === null){
+                result = await uploadImage(req.file.path, imageName);
+                console.log('Esta creando');
+            }else{
+                result = await updateFile(req.file.path, JSON.parse(pregunta.imagen).public_id);
+                console.log('Esta actualizando');
+            }
 
             // Definimos los atributos a almacenar
             image = {

@@ -109,9 +109,9 @@ router.put('/admin/updatePhoto', [limiter, extractToken, verifyJWT, isAdmin, upl
 
 
 // @desc Endpoint encargado de la actualización de la contraseña de un admin
-// @route PUT /api/user/admin/updatePassword
+// @route PUT /api/user/updatePassword
 // @access solo Admin
-router.put('/admin/updatePassword', [limiter, extractToken, verifyJWT, isAdmin], userController.updatePassword);
+router.put('/updatePassword', [limiter, extractToken, verifyJWT], userController.updatePassword);
 
 
 // Importamos el router

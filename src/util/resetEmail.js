@@ -126,18 +126,19 @@ const createEmailEstructure = (id, nombre, apellido, redirectURL, resetString) =
 
     const response = {
         body: {
-            greeting: 'Hola',
+            greeting: 'Corial saludo',
             name: `${nombre} ${apellido}`,
+            intro: 'Has recibido este correo debido a que recibimos una solicitud de cambio de contraseña de tu parte',
             action: {
-                instructions: 'Estamos al tanto de tu solicitud de restablecimiento de contraseña, para continuar con ella, haz click en el botón ubicado en la parte inferior:',
+                instructions: 'Haz click en el botón ubicado en la parte inferior.',
                 button: {
                     color: '#eb343d',
                     text: 'Restablecer contraseña',
                     link: `${redirectURL}/${id}/${resetString}`
                 }
             },
-            outro: "Recuerda que este link expirará en 60 minutos",
-            signature: 'Atentamente, el equipo de desarrollo de'
+            outro: "Recuerda que este link expirará en 60 minutos, si no solicitaste un cambio de contraseña hacer caso omiso a este mensaje",
+            signature: 'Atentamente, el equipo de desarrollo de ing. de sistemas'
         }
     }
 

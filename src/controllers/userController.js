@@ -306,7 +306,7 @@ const updateDirector = async (req, res, next) => {
     const {id} = req.user;
 
     // Obtenemos los datos a actualizar
-    const { nombre, apellido, codigo, email, telefono, direccion, documento, celular } = req.body;
+    const { nombre, apellido, codigo, telefono, direccion, documento, celular } = req.body;
 
     try {
 
@@ -323,7 +323,6 @@ const updateDirector = async (req, res, next) => {
             where: {
                 [Op.or]: [
                     {codigo},
-                    {email},
                     {documento}
                 ]
             }
@@ -338,7 +337,6 @@ const updateDirector = async (req, res, next) => {
             nombre,
             apellido,
             codigo,
-            email,
             telefono,
             direccion,
             documento,

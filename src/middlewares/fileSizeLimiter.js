@@ -9,7 +9,7 @@ const FILE_SIZE_LIMIT = 5 * 1024 * 1024;
 const fileSizeLimiter = (req, res, next) => {
 
     // Obtenemos el archivo
-    const file = req.file || req.files.archivo;
+    const file = req?.file || req.files?.archivo;
 
     // Determinamos si el tamaño sobrepasa el limite especificado
     if (file){
