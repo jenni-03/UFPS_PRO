@@ -18,13 +18,13 @@ const router = Router();
 // @desc Endpoint encargado de la obtención de todas las convocatorias activas
 // @route GET /api/convocatoria
 // @access solo Admin
-router.get('/', [authJWT, isAdmin], convocatoriaController.getConvocatorias);
+router.get('/', [extractToken, verifyJWT, isAdmin], convocatoriaController.getConvocatorias);
 
 
 // @desc Endpoint encargado de la obtención de una convocatoria por su id
 // @route GET /api/convocatoria/:id
 // @access solo Admin
-router.get('/:id', [authJWT, isAdmin], convocatoriaController.getConvocatoriaById);
+router.get('/:id', [extractToken, verifyJWT, isAdmin], convocatoriaController.getConvocatoriaById);
 
 
 // @desc Endpoint encargado de la creación de una nueva convocatoria

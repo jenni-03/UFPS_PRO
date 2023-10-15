@@ -1,24 +1,24 @@
-const Convocatoria = require('../models/Convocatoria');
-const Prueba = require('../models/Prueba');
-const Usuario = require('../models/Usuario');
-const password_generator = require('generate-password');
-const encryptPasswd = require('../util/encryptPassword');
-const generateCorreo = require('../util/emailGenerator');
-const Inscripcion = require('../models/Inscripcion');
-const sequelize = require('../database/db');
-const XLSX = require("xlsx");
-const { Op } = require('sequelize');
-const { validarFechaCoherente } = require('../util/validarFechaCoherente');
+import Convocatoria from '../models/Convocatoria.js';
+import Prueba from '../models/Prueba.js';
+import Usuario from '../models/Usuario.js';
+import password_generator from 'generate-password';
+import encryptPasswd from '../util/encryptPassword.js';
+import generateCorreo from '../util/emailGenerator.js';
+import Inscripcion from '../models/Inscripcion.js';
+import sequelize from '../database/db.js';
+import XLSX from "xlsx";
+import { Op } from 'sequelize';
+import { validarFechaCoherente } from '../util/validarFechaCoherente.js';
 
 
 /* --------- getConvocatorias function -------------- */
 
-const getConvocatorias = async (req, res) => {
+const getConvocatorias = async (req, res, next) => {
+
+    // Estado
+    const state = req.query.estado || true;
 
     try {
-
-        // Estado
-        const state = req.query.estado || true;
 
         // Obtenemos las convocatorias
         const convocatorias = await Convocatoria.findAll({
@@ -33,7 +33,7 @@ const getConvocatorias = async (req, res) => {
         res.status(200).json(convocatorias);
 
     } catch (error) {
-        return res.status(500).json({ error: `Error al obtener convocatorias: ${error.message}` });
+        next(new Error(`Ocurrio un problema al obtener las convocatorias: ${error.message}`));
     }
 
 };
@@ -41,19 +41,12 @@ const getConvocatorias = async (req, res) => {
 
 /* --------- getConvocatoriaById function -------------- */
 
-const getConvocatoriaById = async (req, res) => {
+const getConvocatoriaById = async (req, res, next) => {
+
+    //Obtenemos el id de la convocatoria
+    const { id } = req.params;
 
     try {
-
-        //Obtenemos el id de la convocatoria
-        const { id } = req.params;
-
-        // Verificamos el id de entrada
-        const regexId = /^[0-9]+$/; // Expresión regular que controla solo la admición de numeros
-
-        if (!regexId.test(id)) {
-            return res.status(400).json({ error: 'id no valido' });
-        }
 
         // Obtenemos la convocatoria y verificamos su existencia
         const convocatoria = await Convocatoria.findByPk(id, {
@@ -67,7 +60,7 @@ const getConvocatoriaById = async (req, res) => {
         res.status(200).json(convocatoria);
 
     } catch (error) {
-        return res.status(500).json({ error: `Error al obtener los datos de la convocatoria especificada ${error.message}` });
+        next(new Error(`Ocurrio un problema al intentar añadir el estudiante: ${error.message}`));
     }
 
 };
@@ -503,7 +496,8 @@ const getPreguntasConvocatoria = async (req, res) => {
 }
 
 
-module.exports = {
+const convocatoriaController = {
+
     getConvocatorias,
     getConvocatoriaById,
     createConvocatoria,
@@ -511,4 +505,8 @@ module.exports = {
     presentarPrueba,
     getEstudiantesConvocatoria,
     getPreguntasConvocatoria
-}
+
+};
+
+
+export default convocatoriaController;

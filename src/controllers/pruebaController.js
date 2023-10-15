@@ -20,7 +20,7 @@ const getAllTests = async (req, res, next) => {
             where: {
                 estado: state
             },
-            attributes: ['id', 'nombre', 'semestre', 'estado'],
+            attributes: ['id', 'nombre', 'semestre', 'total_preguntas'],
             include: {
                 model: Competencia,
                 attributes: ['nombre']
@@ -49,9 +49,10 @@ const getTestId = async (req, res, next) => {
         // Obtenemos la prueba y verificamos su existencia
         const prueba = await Prueba.findByPk(id, {
             include: {
-                model: Competencia,
-                attributes: ['nombre']
-            }
+                model: ConfiguracionCategoria,
+                attributes: ['categoria_id', 'valor_categoria']
+            },
+            attributes: ['id', 'nombre', 'descripcion', 'duracion', 'estado', 'puntaje_total']
         });
 
         if(!prueba){
@@ -130,7 +131,7 @@ const updateTest = async (req, res, next) => {
     const {id} = req.params;
 
     // Obtenemos los datos a actualizar
-    const { nombre, descripcion, duracion, estado, valoresCategorias } = req.body;
+    const { nombre, descripcion, duracion, estado, puntaje_total, valoresCategorias } = req.body;
 
     try{
 
@@ -179,6 +180,7 @@ const updateTest = async (req, res, next) => {
                 descripcion,
                 duracion,
                 estado,
+                puntaje_total
             }, {
                 transaction: t
             });
