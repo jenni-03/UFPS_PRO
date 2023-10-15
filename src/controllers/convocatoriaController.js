@@ -9,6 +9,7 @@ import sequelize from '../database/db.js';
 import XLSX from "xlsx";
 import { Op } from 'sequelize';
 import { validarFechaCoherente } from '../util/validarFechaCoherente.js';
+import dayjs from 'dayjs';
 
 
 /* --------- getConvocatorias function -------------- */
@@ -68,7 +69,7 @@ const getConvocatoriaById = async (req, res, next) => {
 
 /* --------- createConvocatoria function -------------- */
 
-const createConvocatoria = async (req, res) => {
+const createConvocatoria = async (req, res, next) => {
 
     // Obtenemos los datos de la convocatoria
     const { nombre, descripcion, fecha_inicio, fecha_fin, prueba_id } = req.body;
@@ -81,13 +82,9 @@ const createConvocatoria = async (req, res) => {
         // Validamos que la fechas sean coherentes
         const error_fecha = validarFechaCoherente(new Date(fecha_inicio), new Date(fecha_fin));
 
-        if (error_fecha) {
+        if (error_fecha !== null) {
             return res.status(400).json({ error: error_fecha });
         }
-
-
-        // Creamos un array que contendra las usuarios insertados
-        let estudiantes = 0;
 
         // Validamos la exsitencia de la prueba 
         const pruebaExist = await Prueba.findByPk(prueba_id);
@@ -96,137 +93,178 @@ const createConvocatoria = async (req, res) => {
             return res.status(400).json({ error: 'No existe ninguna prueba con el id especificado' })
         }
 
+
+        // Procesamos el archivo excel y obtenemos los datos
+        const workbook = XLSX.read(excelFileBuffer, {
+            type: 'buffer'
+        });
+        const workbookSheets = workbook.SheetNames;
+        const sheet = workbookSheets[0];
+        const dataExcel = XLSX.utils.sheet_to_json(workbook.Sheets[sheet]);
+
+
+        // Obtenemos todos los estudiantes existentes
+        const existingStudents = await Usuario.findAll({
+            where: {
+                tipo: 'Estudiante'
+            },
+            attributes: ['codigo', 'email']
+        });
+
+
         //Inicializamos la transacción
-        await sequelize.transaction(async (t) => {
+        const result = await sequelize.transaction(async (t) => {
 
             // Creamos la convocatoria
             const convocatoria = await Convocatoria.create({
                 nombre,
                 descripcion,
-                fecha_inicio: new Date(fecha_inicio),
-                fecha_fin: new Date(fecha_fin),
+                fecha_inicio: new Date(dayjs(fecha_inicio).format('YYYY-MM-DD HH:mm')),
+                fecha_fin: new Date(dayjs(fecha_fin).format('YYYY-MM-DD HH:mm')),
                 prueba_id
             }, {transaction: t});
 
 
-            // Procesamos el archivo excel y obtenemos los datos
-            const workbook = XLSX.read(excelFileBuffer, {
-                type: 'buffer'
-            });
-            const workbookSheets = workbook.SheetNames;
-            const sheet = workbookSheets[0];
-            const dataExcel = XLSX.utils.sheet_to_json(workbook.Sheets[sheet]);
-
-
             // Registramos los datos de los usuarios
-            for (const itemFila of dataExcel) {
-
-                let estudiante_id = 0;
+            const promiseStudents = dataExcel.map( async (itemFila) => {
 
                 // Validar las cabeceras del archivo
                 if (!itemFila['Nombre'] || !itemFila['Apellido'] || !itemFila['Codigo'] || !itemFila['Email']
                     || !itemFila['Semestre']) {
 
+                    res.status(400);
                     throw new Error ('Formato de archivo no correspondiente');
 
                 }
 
-                // Validar el codigo y el email (deben ser unicos)
+                // Validamos el formato del semestre
+                const semesterRegex = /^\d+$/;
+                if(!semesterRegex.test(itemFila['Semestre'])) {
+                    res.status(400);
+                    throw new Error('Semestre de estudiante invalido');
+                }
+
+                const semestre = parseInt(itemFila['Semestre']);
+                if (semestre <= 0 || semestre > 10) {
+                    res.status(400);
+                    throw new Error('El semestre debe ser un número entre 1 y 10');
+
+                }
+
+                // Validamos el formato del codigo
+                const codeRegex = /^\d{7}$/;
+                if(!codeRegex.test(itemFila['Codigo'])) {
+                    res.status(400);
+                    throw new Error('Codigo de estudiante invalido');
+                }
+                const codigo = itemFila['Codigo'];
+
+                // Validamos el formato del email
+                const regexMail = /^[a-zA-Z0-9._%+-]+@ufps.edu.co$/
+                if(!regexMail.test(itemFila['Email'])) {
+                    res.status(400);
+                    throw new Error('El formato de correo no es valido, debe coincidir con el dominio de la UFPS');
+                }
+                const email = itemFila['Email'];
+
+                // Validamos el formato del nombre y apellido
+                const regexName = /^(?! )[a-zA-ZÀ-ÖØ-öø-ÿ0-9]+( [a-zA-ZÀ-ÖØ-öø-ÿ0-9]+)*(?<! )$/
+                if(!regexName.test(itemFila['Nombre']) || !regexName.test(itemFila['Apellido'])) {
+                    res.status(400);
+                    throw new Error('El formato de nombre o apellido no son validos');
+                }
                 const nombre = itemFila['Nombre'];
                 const apellido = itemFila['Apellido'];
-                const email = itemFila['Email'];
-                const codigo = itemFila['Codigo'];
-                const semestre = itemFila['Semestre'];
 
-                const studentNoValid = await Usuario.findOne({
-                    where: {
-                        [Op.or]: [
-                            {
+
+                // Verificamos si el estudiante ya existe
+                const exists = existingStudents.some(student => 
+                    student.codigo === codigo || student.email === email
+                );
+
+                // En caso de existir solo notificamos al usuario y creamos su inscripcion
+                if (exists) {
+
+                    // Obtenemos el usuario ya registrado
+                    const userExist = await Usuario.findOne({
+                        where: {
+                            [Op.or]: {
                                 codigo,
-                                email: { [Op.ne]: email } // Email diferente al ingresado
-                            },
-                            {
-                                codigo: { [Op.ne]: codigo }, // Código diferente al ingresado
-                                email // Email coincidente al ingresado
+                                email
                             }
-                        ]
-                    }
-                });
-
-                if (studentNoValid) {
-                    throw new Error(`El código ${codigo} o el email ${email} ya fueron asignados` );
-                }
-
-                if (pruebaExist.semestre !== itemFila['Semestre']) {
-                    continue;
-                }
-
-
-                // Validamos si el estudiante existe
-                const estudianteExist = await Usuario.findOne({
-                    where: {
-                        nombre,
-                        apellido,
-                        email,
-                        codigo,
-                        tipo: 'estudiante'
-                    }
-                });
-
-
-                // Si el estudiante no ha sido registrado
-                if (!estudianteExist) {
-
-                    // Generamos la contraseña
-                    const password = password_generator.generate({
-                        length: 15,
-                        numbers: true
+                        }
                     });
 
-                    // Ciframos la contraseña
-                    const hashedPassword = await encryptPasswd(password);
-
-                    // Creamos el estudiante
-                    const estudiante = await Usuario.create({
-                        nombre: itemFila['Nombre'],
-                        apellido: itemFila['Apellido'],
-                        codigo,
-                        email,
-                        password: hashedPassword,
-                        tipo: 'estudiante',
-                        semestre,
-                        rol_id: 2
+                    // Creamos la inscripción
+                    await Inscripcion.create({
+                        fecha_inscripcion: new Date(dayjs().format('YYYY-MM-DD HH:mm')),
+                        usuario_id: userExist.id,
+                        convocatoria_id: convocatoria.id
                     }, {transaction: t});
 
-                    estudiante_id = estudiante.id;
+                    // Enviamos correo de notificacion
+                    await generateCorreo(`${nombre} ${apellido}`, email, password, 'Notificar', convocatoria.nombre);
 
-                    // Enviamos correo de confirmación de registro
-                    await generateCorreo(`${nombre} ${apellido}`, email, password);
-
+                    return 1;
                 }
 
+                // Generamos la contraseña
+                const password = password_generator.generate({
+                    length: 15,
+                    numbers: true
+                });
+
+                // Ciframos la contraseña
+                const hashedPassword = await encryptPasswd(password);
+
+                return {
+
+                    nombre,
+                    apellido,
+                    codigo,
+                    email,
+                    password: hashedPassword,
+                    tipo: 'Estudiante',
+                    semestre,
+                    rol_id: 2
+
+                }
+                
+
+            }); 
+
+            const estudiantes = Promise.all(promiseStudents);
+
+            // Filtramos a los estudiantes nuevos
+            const newStudents = (await estudiantes).filter(student => student !== 1);
+
+            return newStudents;
+            
+            // Registramos a los estudiantes nuevos
+            /*await Usuario.bulkCreate(newStudents);
+
+            // Generamos la inscripción, contraseña y enviamos correo de registro
+            newStudents.forEach(async(estudiante) => {
 
                 // Creamos la inscripción a la convocatoria
                 await Inscripcion.create({
-                    fecha_inscripcion: new Date(),
-                    usuario_id: estudianteExist !== null ? estudianteExist.id : estudiante_id,
+                    fecha_inscripcion: dayjs().toDate(),
+                    usuario_id: estudiante.id,
                     convocatoria_id: convocatoria.id
                 }, {transaction: t});
 
-                estudiantes += 1;
+                // Enviamos correo de confirmación de registro
+                await generateCorreo(`${nombre} ${apellido}`, email, password, 'Registro', convocatoria.nombre);
 
-            }
-
-            if (estudiantes === 0) {
-                throw new Error (`No se pudo almacenar a ningun estudiante` );
-            }
+            });*/
 
         });
 
-        res.status(200).json({ message: `Se han registrado ${estudiantes} estudiantes satisfactoriamente para la convocatoria` });
+        // { message: `Se han registrado ${estudiantes} estudiantes satisfactoriamente para la convocatoria` }
+        res.status(200).json(result);
 
     } catch (err) {
-        return res.status(500).json({ error: `Error al procesar el archivo de estudiantes: ${err.message}` });
+        next(new Error(`Ocurrio un problema al intentar crear la convocatoria: ${err.message}`));
     }
 
 };

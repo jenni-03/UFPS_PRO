@@ -41,11 +41,15 @@ const convocatorySchema = z.object({
             }),
         
         prueba_id: z
-            .number({
-                invalid_type_error: 'El identificador de la prueba debe ser numerico',
-                required_error: 'El identificador de la prueba es necesario'
+            .string({
+                required_error: 'El identificador de la prueba es requerido'
             })
-            .min(1,{message: 'El identificador de la prueba debe ser mayor que 0'})
+            .regex(/^\d+$/, { message: 'El identificador de la prueba solo puede ser un numero' }).refine(value => {
+                const numero = parseInt(value, 10);
+                return numero > 0;
+            }, {
+                message: 'El identificador de la prueba no debe ser 0 o negativo',
+            })
 
     }).partial(),
     
@@ -73,7 +77,7 @@ const convocatorySchema = z.object({
 
 
 // Validación de esquema
-export function validateTestData(req, res, next){
+export function validateConvocatoriaData(req, res, next){
     const errors = validateData(convocatorySchema, req);
     if (errors.length !== 0) return res.status(400).json({ error: errors });
     next();
