@@ -70,27 +70,13 @@ const getConvocatoriaById = async (req, res, next) => {
 
 const createConvocatoria = async (req, res) => {
 
-    try {
+    // Obtenemos los datos de la convocatoria
+    const { nombre, descripcion, fecha_inicio, fecha_fin, prueba_id } = req.body;
 
-        // Obtenemos los datos de la convocatoria
-        const { nombre, descripcion, fecha_inicio, fecha_fin, prueba_id } = req.body;
+    try {
 
         // Obtenemos el archivo excel cargado por el usuario 
         const excelFileBuffer = req.files.archivo.data;
-
-
-        // Validamos los datos
-        if (!nombre || !descripcion || !fecha_inicio || !fecha_fin || !prueba_id || !excelFileBuffer) {
-            return res.status(400).json({ error: 'Todos los campos son requeridos' });
-        }
-
-        const regexNum = /^[0-9]+$/;
-        const regexData = /^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/;
-
-        if (!regexData.test(nombre) || !regexNum.test(prueba_id)) {
-            return res.status(400).json({ error: 'La sintaxis de los datos no es correcta' });
-        }
-
 
         // Validamos que la fechas sean coherentes
         const error_fecha = validarFechaCoherente(new Date(fecha_inicio), new Date(fecha_fin));
@@ -102,7 +88,6 @@ const createConvocatoria = async (req, res) => {
 
         // Creamos un array que contendra las usuarios insertados
         let estudiantes = 0;
-
 
         // Validamos la exsitencia de la prueba 
         const pruebaExist = await Prueba.findByPk(prueba_id);

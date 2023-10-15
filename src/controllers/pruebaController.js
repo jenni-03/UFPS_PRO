@@ -4,6 +4,7 @@ import ConfiguracionCategoria from '../models/ConfiguracionCategoria.js';
 import { validate_percentage_categories, asignValueCategories } from '../util/validateDataCategories.js';
 import { asignCompetences, asignQuestions } from '../util/createTestQuestion.js';
 import sequelize from '../database/db.js';
+import Categoria from '../models/Categoria.js';
 
 
 /* --------- getAllTests function -------------- */
@@ -50,7 +51,13 @@ const getTestId = async (req, res, next) => {
         const prueba = await Prueba.findByPk(id, {
             include: {
                 model: ConfiguracionCategoria,
-                attributes: ['categoria_id', 'valor_categoria']
+                attributes: ['categoria_id', 'valor_categoria'],
+                include: [
+                    {
+                        model: Categoria,
+                        attributes: ['nombre']
+                    }
+                ]
             },
             attributes: ['id', 'nombre', 'descripcion', 'duracion', 'estado', 'puntaje_total']
         });
