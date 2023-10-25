@@ -81,6 +81,7 @@ const getStudentById = async (req, res, next) => {
         });
 
         if (!student){
+            req.log.warn('Intento de acceso a estudiante inexistente');
             return res.status(400).json({ error: 'No es posible identificar al estudiante especificado' });
         }
 
@@ -129,7 +130,7 @@ const updateStudentData = async (req, res, next) => {
 }
 
 
-// ------------ Métodos para el Director ------------------
+// ------------ Métodos para el Director (sobre el estudiante) ------------------
 
 
 /* --------- createStudent function -------------- */
@@ -165,7 +166,7 @@ const createStudent =  async (req, res, next) => {
         const hashedPassword = await encryptPasswd(password);
 
         // Creamos el usuario
-        const student = await Usuario.create({
+        await Usuario.create({
             nombre,
             apellido,
             codigo,
@@ -177,7 +178,7 @@ const createStudent =  async (req, res, next) => {
         });
 
         // Enviamos correo de confirmación de registro
-        await generateCorreo(`${nombre} ${apellido}`, email, password);
+        await generateCorreo(`${nombre} ${apellido}`, email, password, 'Registro', 'Registro de estudiantes');
 
         // Respondemos al usuario
         res.status(200).json({ message: 'Usuario creado exitosamente' });
@@ -210,6 +211,7 @@ const updateStudentDataDir = async (req, res, next) => {
         });
 
         if(!student){
+            req.log.warn('Intento de acceso a estudiante inexistente');
             return res.status(400).json({error: 'No se encuentra ningun estudiante asociado con el id especificado'});
         }
 
@@ -224,6 +226,7 @@ const updateStudentDataDir = async (req, res, next) => {
         })
 
         if(studentExist && studentExist.id !== student.id){
+            req.log.warn(`El usuario con id ${req.user.id} esta tratando de asignar un codio o email de estudiante actualmente en uso`);
             return res.status(400).json({error: "El codigo y email de el estudiante deben ser unico"});
         }
 
@@ -329,6 +332,7 @@ const updateDirector = async (req, res, next) => {
         });
 
         if(directorExist && directorExist.id !== director.id){
+            req.log.warn(`Intento de uso de credenciales de administrador ya registradas`);
             res.status(400).json({error: "El codigo y documento de el director deben ser unicos"});
         }
 
@@ -418,6 +422,7 @@ const updatePassword = async (req, res, next) => {
         const match = await bcrypt.compare(password, user.password);
 
         if(!match){
+            req.log.warn('Uso de credenciales incorrectas al actualizar la contraseña')
             return res.status(400).json({error: `La contraseña ingresada no corresponde con la original`});
         }
 

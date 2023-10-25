@@ -6,7 +6,7 @@ import ConfiguracionCategoria from '../models/ConfiguracionCategoria.js';
 /**
  * Función encargada de validar que el valor porcentual por categoria coincida con los limites establecidos
  * @param {object} valoresCategoria 
- * @returns 
+ * @returns number
  */
 export const validate_percentage_categories = (valoresCategoria) => {
 

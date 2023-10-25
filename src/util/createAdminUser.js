@@ -42,7 +42,7 @@ const createAdminUser = async () => {
 
             }
 
-            const getSalt = await bcrypt.genSalt(11);
+            const getSalt = await bcrypt.genSalt(12);
             const hashed = await bcrypt.hash('Director1234', getSalt);
 
             const errors = validateData(directorSchema, newAdmin);

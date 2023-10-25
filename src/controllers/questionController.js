@@ -193,6 +193,13 @@ const createQuestions = async (req, res, next) => {
 
             }
 
+            // Validamos la opción de respuesta
+            const regexAnswer = /^[a-zA-Z]{1}$/;
+            if(!regexAnswer.test(itemFila['Respuesta'])){
+                res.status(400);
+                throw new Error('La respuesta a la pregunta debe corresponder a una de las opciones disponibles');
+            }
+
 
             // Obtenemos las opciones de respuesta
             const options = Object.keys(itemFila).filter(key => /^[A-Z]$/i.test(key));
@@ -251,23 +258,21 @@ const createQuestions = async (req, res, next) => {
 
         
         // Filtramos las preguntas para eliminar las que ya existen en la BD
-        const newQuestions = await Promise.all(
-            questions.map(async question => {
-                const pregunta_limpia = await question
-                const exists = await Pregunta.findOne({
-                    where: { texto_pregunta: pregunta_limpia.texto_pregunta }
-                });
-                return exists ? null : question;
-            })
-        );
+        const preguntas = await Promise.all(questions);
 
-        // eliminamos los valores nulos del array (repetidos)
-        const filteredBDQuestions = newQuestions.filter(Boolean);
+        const existQuestions = await Pregunta.findAll({
+            attributes: ['texto_pregunta']
+        });
+
+        const newQuestions = preguntas.filter(question => {
+            return !existQuestions.some(existQuestion => existQuestion.texto_pregunta === question.texto_pregunta);
+        });
+
 
         // Aseguramos que no existan repetidos dentro del array de preguntas
         let finalQuestions = [];
 
-        if (filteredBDQuestions.length > 0) finalQuestions = removeQuestionsRepeat(filteredBDQuestions);
+        if (newQuestions.length > 0) finalQuestions = removeQuestionsRepeat(newQuestions);
 
         // Insertamos todas las preguntas unicas a la vez
         await Pregunta.bulkCreate(finalQuestions);
@@ -325,7 +330,7 @@ const getQuestionById = async (req, res, next) => {
             estado: pregunta.estado,
             semestre: pregunta.semestre,
             categoria: pregunta.categoria.nombre,
-            imageFile: pregunta.imagen !== null ? JSON.parse(pregunta.imagen).url : ''
+            imageFile: pregunta.imagen !== null ? pregunta.imagen.url : ''
         });
 
     }catch(err){
@@ -371,6 +376,13 @@ const actualizarPregunta = async (req, res, next) => {
             return res.status(400).json({error: "El id de categoria proporcionado no corresponde a ninguna existente"});
         }
 
+        // Validamos que la respuesta se encuentre entre las opciones disponibles
+        if(posicionEnAlfabeto(respuesta) > new_options.length) return res.status(400).json({ error: 'La respuesta debe coincidir con alguna de las opciones disponibles' });
+
+        // Validamos que ninguna de las respuestas se repita
+        if (!validateAnswers(new_options)) return res.status(400).json({ error: 'Ninguna de las opciones de respuesta puede repetirse' });
+
+
         // Actualizamos la pregunta
         await pregunta.update({
             texto_pregunta,
@@ -394,10 +406,8 @@ const actualizarPregunta = async (req, res, next) => {
             // Subimos la nueva imagen
             if (pregunta.imagen === null){
                 result = await uploadImage(req.file.path, imageName);
-                console.log('Esta creando');
             }else{
-                result = await updateFile(req.file.path, JSON.parse(pregunta.imagen).public_id);
-                console.log('Esta actualizando');
+                result = await updateFile(req.file.path, pregunta.imagen.public_id);
             }
 
             // Definimos los atributos a almacenar

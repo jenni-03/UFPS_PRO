@@ -166,6 +166,7 @@ export const requestPasswordRst = async (req, res, next) => {
         });
 
         if(!user || !user.estado){
+            req.log.warn('Intento de restablecimiento no autorizado');
             return res.status(400).json({ error: 'El email proporcionado no esta autorizado para solicitar un cambio de contraseña' });
         }
 
@@ -198,6 +199,7 @@ export const resetPassword = async (req, res, next) => {
         });
 
         if(!password_reset){
+            req.log.warn(`El usuario con id: ${user_id} no tiene peticiones de cambio de contraseña`);
             return res.status(400).json({ error: `No existe una petición de cambio de contraseña por parte del usuario` });
         }
 
@@ -206,6 +208,7 @@ export const resetPassword = async (req, res, next) => {
 
         if(expires_At < dayjs().toDate() || password_reset.expired){
             
+            req.log.warn(`El usuario con id: ${user_id} ha intentado un restablecimiento con un link expirado`);
             return res.status(400).json({ error: `El link de restablecimiento ha expirado` });
 
         }
@@ -214,11 +217,12 @@ export const resetPassword = async (req, res, next) => {
         const match = await bcrypt.compare(resetString, password_reset.uniqueString);
 
         if(!match){
+            req.log.warn(`El usuario con id: ${user_id} ha proporcionado un link restablecimiento no valido`);
             return res.status(400).json({ error: 'La cadena de restablecimiento no coincide' });
         }
 
         // Volvemos a encriptar la nueva contraseña
-        const salt = await bcrypt.genSalt(11);
+        const salt = await bcrypt.genSalt(12);
         const hashedNewPswd = await bcrypt.hash(newPassword, salt);
 
         // Actualizamos la contraseña del usuario

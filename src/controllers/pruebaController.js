@@ -164,11 +164,11 @@ const updateTest = async (req, res, next) => {
         // Validamos que los nuevos porcentajes sean coincidentes
         let valor_total_categorias = 0;
 
-        // Validamos que los datos ingresados para las categotrias 
-        // de la competencia generica sean correctos (si aplica)
+        // Validamos los porcentajes ingresados para las categotrias 
+        // no supere el maximo posible
         for (const valores of valoresCategorias){
                 
-            valor_total_categorias += validate_percentage_categories(valores);;
+            valor_total_categorias += validate_percentage_categories(valores);
             
         }
 
@@ -227,9 +227,6 @@ const testController = {
     getAllTests,
     getTestId, 
     createTest,
-    asignCompetences,
-    asignValueCategories,
-    asignQuestions,
     updateTest
 };
 

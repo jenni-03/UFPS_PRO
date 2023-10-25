@@ -1,3 +1,4 @@
+/** Middleware encargado de la obtención del token para su verificación */
 
 const extractToken = (req, res, next) => {
 

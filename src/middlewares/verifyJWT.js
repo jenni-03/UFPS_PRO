@@ -17,7 +17,10 @@ const verifyJWT = async (req, res, next) => {
         // Verificamos los datos del payload
         const foundUser = await Usuario.findByPk(id);
 
-        if(!foundUser || !foundUser.estado) return res.status(401).json({ message: 'Acceso no autorizado' });
+        if(!foundUser || !foundUser.estado) {
+            req.log.warn(`Intento de acceso no autorizado por parte de presunto usuario con identificador ${id}`);
+            return res.status(401).json({ message: 'Acceso no autorizado' });
+        }
 
         req.user = {
             id,
@@ -30,6 +33,7 @@ const verifyJWT = async (req, res, next) => {
         
         // Manejamos los posibles errores
         if(err.name === 'JsonWebTokenError') {
+            req.log.warn('Envio de token no valido');
             return res.status(401).json({ error: 'Token inválido' });
         }
         if(err.name === 'TokenExpiredError') {

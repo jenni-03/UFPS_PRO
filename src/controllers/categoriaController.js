@@ -52,6 +52,7 @@ const getCategoriaById = async (req, res, next) => {
         });
 
         if(!categoria){
+            req.log.warn(`El usuario con id ${req.user.id} intento acceder a una categoria no especificada`);
             return res.status(400).json({error: 'No se encuentra ninguna categoria con el id especificado'});
         }
 
@@ -90,7 +91,10 @@ const createCategoria = async (req, res, next) => {
         
 
         // Comprobamos que el id de la competencia corresponda a uno válido
-        if(!competencia_exist) return res.status(400).json({error: 'El id de competencia proporcionado no corresponde con ninguna existente'});
+        if(!competencia_exist) {
+            req.log.warn(`Intento de asociacion de una competencia inexistente a una nueva categoria por parte del usuario con id ${req.user.id}`);
+            return res.status(400).json({error: 'El id de competencia proporcionado no corresponde con ninguna existente'});
+        }
         
 
         // Creamos la categoria
@@ -137,14 +141,20 @@ const updateCategoria = async (req, res, next) => {
         ]);
         
         // Verificamos la categoria
-        if(!categoria) return res.status(400).json({error: 'No se encuentra ninguna categoria con el id especificado'});
+        if(!categoria) {
+            req.log.warn(`El usuario con id ${req.user.id} intento acceder a una categoria no especificada`);
+            return res.status(400).json({error: 'No se encuentra ninguna categoria con el id especificado'})
+        };
         
         // Comprobamos que el nombre sea unico 
         if(categoriaExist && categoriaExist.nombre !== categoria.nombre) return res.status(400).json({error: `El nombre de la categoria ${nombre} ya se encuentra registrado`});
         
 
         // Comprobamos que el id de la competencia corresponda a uno válido
-        if(!competencia_exist) return res.status(400).json({error: 'El id de la competencia proporcionado no corresponde con ninguna existente'});
+        if(!competencia_exist) {
+            req.log.warn(`Intento de asociacion de una competencia inexistente a una nueva categoria por parte del usuario con id ${req.user.id}`);
+            return res.status(400).json({error: 'El id de la competencia proporcionado no corresponde con ninguna existente'})
+        };
     
         // Actualizamos la categoria
         await categoria.update({

@@ -47,7 +47,7 @@ router.get('/student/:id', [ extractToken, verifyJWT, isAdmin, validateStudentDa
 
 
 // @desc Endpoint encargado de la actualización de los datos de contacto de un estudiante por el mismo a partir de su id
-// @route PUT /api/user/student/update/:id
+// @route PUT /api/user/student/update
 // @access Estudiante
 router.put('/student/update', [ limiter, extractToken, verifyJWT, validateStudentData ], userController.updateStudentData);
 
@@ -108,9 +108,9 @@ const upload = multer({
 router.put('/admin/updatePhoto', [limiter, extractToken, verifyJWT, isAdmin, upload.single('avatar'), filePayloadExists, fileExtLimiter(["image/jpeg", "image/png"]), fileSizeLimiter], userController.updatePhotoDirector);
 
 
-// @desc Endpoint encargado de la actualización de la contraseña de un admin
+// @desc Endpoint encargado de la actualización de la contraseña de un usuario
 // @route PUT /api/user/updatePassword
-// @access solo Admin
+// @access solo Usuarios
 router.put('/updatePassword', [limiter, extractToken, verifyJWT], userController.updatePassword);
 
 

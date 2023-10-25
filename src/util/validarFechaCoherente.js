@@ -1,21 +1,21 @@
-import moment from 'moment-timezone';
+import moment from 'moment';
 
 /**
  * Función encargada de validar la coherencia de las fechas manejadas por el software
  * @param {Date} fecha_inicio 
  * @param {Date} fecha_fin 
- * @returns 
+ * @returns string
  */
 export function validarFechaCoherente(fecha_inicio, fecha_fin) {
 
 
     // Zona horaria a trabajar
-    const zonaHoraria = 'America/Bogota';
+    const format = 'YYYY-MM-DD HH:mm';
 
     // Fechas a comparar
-    const fechaActual = moment().tz(zonaHoraria);
-    const fecha_inicio_format = moment.tz(fecha_inicio, zonaHoraria);
-    const fecha_fin_format = moment.tz(fecha_fin, zonaHoraria);
+    const fechaActual = moment().local();
+    const fecha_inicio_format = moment(fecha_inicio, format).local();
+    const fecha_fin_format = moment(fecha_fin, format).local();
 
     if (fecha_inicio_format.isBefore(fechaActual)) {
         return 'La fecha de inicio de la convocatoria no es coherente';

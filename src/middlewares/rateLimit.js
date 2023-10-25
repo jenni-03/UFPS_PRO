@@ -1,5 +1,6 @@
 import { rateLimit } from 'express-rate-limit';
 
+// Configuración del limitador de peticiones
 const limiter = rateLimit({
     windowMs: 2 * 60 * 1000,
     limit: 10,

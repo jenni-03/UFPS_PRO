@@ -48,6 +48,7 @@ const getCategoriasCompetencia = async (req, res, next) => {
         });
 
         if(!competencia){
+            req.log.warn(`El usuario con id ${req.user.id} intento acceder a una competencia no especificada`);
             return res.status(400).json({error: 'No se encuentra ninguna competencia con el id especificado'});
         }
 
@@ -92,6 +93,7 @@ const getCompetenciaById = async (req, res, next) => {
         });
 
         if(!competencia){
+            req.log.warn(`El usuario con id ${req.user.id} intento acceder a una competencia no especificada`);
             return res.status(400).json({error: 'No se encuentra ninguna competencia con el id especificado'});
         }
 
@@ -122,11 +124,12 @@ const createCompetencia = async (req, res) => {
         });
 
         if(compFound){
+            req.log.warn(`El usuario con id ${req.user.id} intento crear una competencia ya registrada`);
             return res.status(400).json({error: `El nombre de la competencia ${nombre} ya se encuentra registrado`});
         }
 
         // Creamos la competencia
-        const competencia = await Competencia.create({
+        await Competencia.create({
             nombre: nombre.toUpperCase(),
             descripcion
         });
@@ -166,10 +169,16 @@ const updateCompetencia = async (req, res, next) => {
         ]);
 
         // verificamos la competencia
-        if(!competencia) return res.status(400).json({error: 'No se encuentra ninguna competencia con el id especificado'});
+        if(!competencia) {
+            req.log.warn(`El usuario con id ${req.user.id} intento acceder a una competencia inexistente.`);
+            return res.status(400).json({error: 'No se encuentra ninguna competencia con el id especificado'});
+        }
         
         // Comprobamos que el nombre sea unico 
-        if(compFound && competencia.nombre !== compFound.nombre) return res.status(400).json({error: `El nombre de competencia ${nombre} ya se encuentra registrado`});
+        if(compFound && competencia.nombre !== compFound.nombre) {
+            req.log.warn(`El usuario con id ${req.user.id} intento usar un nombre de competencia ya registrado`);
+            return res.status(400).json({error: `El nombre de competencia ${nombre} ya se encuentra registrado`});
+        }
         
         // Actualizamos la competencia
         await competencia.update({

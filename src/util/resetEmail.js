@@ -12,8 +12,10 @@ import dayjs from 'dayjs';
 const { email_address, email_password } = configuration;
 
 
-/** Función encargada de el envio de correo para el restablecimiento de contraseña de un 
- *  usuario
+/**
+ * Función encargada de el envio de correo para el restablecimiento de contraseña de un usuario
+ * @param {object} user 
+ * @param {string} redirectURL 
  */
 const sendResetEmail = async (user, redirectURL) => {
 
@@ -66,6 +68,12 @@ const sendResetEmail = async (user, redirectURL) => {
 }
 
 
+/**
+ * Función encargada de encriptar la cadena de restablecimiento de contraseña
+ * @param {number} id 
+ * @param {string} resetString 
+ * @returns a hashed string
+ */
 const hashResetString = async (id, resetString) => {
 
     // Hasheamos la cadena de restablecimiento
@@ -77,6 +85,11 @@ const hashResetString = async (id, resetString) => {
 }
 
 
+/**
+ * Función encargada de crear o actualizar el registro de restablecimiento de contraseña según sea el caso
+ * @param {number} id 
+ * @param {string} hashedString 
+ */
 const updateRecordReset = async (id, hashedString) => {
 
     // Verificamos si el usuario ya posee un registro de restablecimiento
@@ -112,6 +125,15 @@ const updateRecordReset = async (id, hashedString) => {
 }
 
 
+/**
+ * Función encargada de crear el cuerpo del correo de restablecimiento de contraseña
+ * @param {number} id 
+ * @param {string} nombre 
+ * @param {string} apellido 
+ * @param {string} redirectURL 
+ * @param {string} resetString 
+ * @returns body reset password email
+ */
 const createEmailEstructure = (id, nombre, apellido, redirectURL, resetString) => {
 
     const mailGenerator = new mailGen({
