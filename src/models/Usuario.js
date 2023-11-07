@@ -1,4 +1,7 @@
 import { DataTypes } from 'sequelize';
+import encrypt from '../util/encryptPassword.js';
+import PasswordReset from './PasswordReset.js';
+import Inscripcion from './Inscripcion.js';
 
 // Importamos el objeto de conexión
 import sequelize from '../database/db.js';
@@ -71,20 +74,14 @@ const User = sequelize.define('usuarios', {
     },
     direccion: {
         type: DataTypes.STRING,
-        allowNull: true,
-        validate: {
-            len: {
-                args: [20, 60],
-                msg: "La dirección ha de tener entre 20 y 60 caracteres"
-            }
-        }
+        allowNull: true
     },
     documento: {
         type: DataTypes.STRING,
         allowNull: true,
         unique: {
             name: 'directors_document',
-            msg: "Document already registered"
+            msg: "El documento proporcionado ya se encuentra registrado"
         },
         validate: {
             isNumeric: {
@@ -98,12 +95,7 @@ const User = sequelize.define('usuarios', {
     },
     celular: {
         type: DataTypes.STRING,
-        allowNull: true,
-        validate: {
-            isNumeric: {
-                msg: "El celular solo ha de contener números"
-            }
-        }
+        allowNull: true
     },
     foto_perfil: {
         type: DataTypes.JSON,
@@ -112,12 +104,7 @@ const User = sequelize.define('usuarios', {
     // Student data
     semestre: {
         type: DataTypes.INTEGER,
-        allowNull: true,
-        validate: {
-            notEmpty:{
-                msg: "El semestre no puede ser vacio"
-            }
-        }
+        allowNull: true
     },
     estado: {
         type: DataTypes.BOOLEAN,
@@ -132,9 +119,36 @@ const User = sequelize.define('usuarios', {
         }
     }
 }, {
-    timestamps: false
+    hooks: {
+        beforeCreate: async (user, options) => {
+            try{
+                const hashedPassword = await encrypt(user.password);
+                user.password = hashedPassword;
+            }catch(err){
+                const errorPassword = new Error(`Error al intentar encriptar la contraseña del usuario con ID ${user.id}`);
+                errorPassword.stack = err.stack; 
+                throw errorPassword; 
+            }
+        },
+        beforeDestroy: async (user, options) => {
+            try{
+                await Promise.all([
+                    PasswordReset.destroy({ where: { usuario_id: user.id } }),
+                    Inscripcion.destroy({ where: { usuario_id: user.id } })
+                ]);
+            }catch(err){
+                const errorDelete = new Error(`Error al intentar eliminar datos relacionados al usuario con ID ${user.id}`);
+                errorDelete.stack = err.stack; 
+                throw errorDelete; 
+            }
+        }
+    },
+    paranoid: true,
+    deletedAt: 'fecha_inactivacion',
+    timestamps: true,
+    createdAt: 'fecha_creacion',
+    updatedAt: 'fecha_actualizacion'
 });
-
 
 
 // Exportamos el modelo

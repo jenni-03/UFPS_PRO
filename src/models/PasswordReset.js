@@ -11,23 +11,28 @@ const PasswordReset = sequelize.define('password_resets', {
         autoIncrement: true
     },
     uniqueString: {
-        type: DataTypes.STRING
+        type: DataTypes.STRING,
+        allowNull: false
     },
     created_At: {
-        type: DataTypes.DATE
+        type: DataTypes.DATE,
+        allowNull: false
     },
     expires_At: {
-        type: DataTypes.DATE
+        type: DataTypes.DATE,
+        allowNull: false
     },
     expired: {
-        type: DataTypes.BOOLEAN
+        type: DataTypes.BOOLEAN,
+        allowNull: false
     },
     usuario_id: {
         type: DataTypes.INTEGER,
         references: {
             model: 'usuarios',
             key: 'id'
-        }
+        },
+        allowNull: false
     }
 }, {
     timestamps: true,

@@ -5,7 +5,7 @@ import sequelize from '../database/db.js';
 
 
 // Creamos el esquema del modelo
-const ConfiguracionCategoria = sequelize.define('configuracion_categoria', {
+const ConfiguracionCategoria = sequelize.define('configuraciones_categorias', {
     id: {
         type: DataTypes.INTEGER,
         autoIncrement: true,
@@ -16,11 +16,7 @@ const ConfiguracionCategoria = sequelize.define('configuracion_categoria', {
         allowNull: false,
         validate: {
             isNumeric: {
-                msg: "La cantidad de preguntas solo puede contener números"
-            },
-            min: {
-                args: 1,
-                msg: "La cantidad de preguntas por categoria debe ser mayor que 0"
+                msg: "La cantidad de preguntas solo puede ser numerica"
             }
         }
     },
@@ -29,15 +25,7 @@ const ConfiguracionCategoria = sequelize.define('configuracion_categoria', {
         allowNull: false,
         validate: {
             isNumeric: {
-                msg: "El valor de la categoría solo puede contener números"
-            },
-            min: {
-                args: 1,
-                msg: "El valor de la categoria debe ser mayor que 0"
-            },
-            max: {
-                args: 100,
-                msg: "El valor de la categoria debe ser menor o igual a 100"
+                msg: "El valor porcentual de la categoría solo puede numerico"
             }
         }
     },
@@ -58,7 +46,11 @@ const ConfiguracionCategoria = sequelize.define('configuracion_categoria', {
         }
     }
 }, {
-    timestamps: false
+    paranoid: true,
+    deletedAt: 'fecha_inactivacion',
+    timestamps: true,
+    createdAt: 'fecha_creacion',
+    updatedAt: 'fecha_actualizacion'
 });
 
 export default ConfiguracionCategoria;

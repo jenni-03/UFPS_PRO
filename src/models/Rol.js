@@ -13,10 +13,18 @@ const Rol = sequelize.define('roles', {
     },
     nombre: {
         type: DataTypes.STRING,
-        allowNull: false
+        allowNull: false,
+        unique: {
+            name: "nombre_rol",
+            msg: "No se admite la duplicación de roles"
+        }
     }
 }, {
-    timestamps: false
+    paranoid: true,
+    deletedAt: 'fecha_inactivacion',
+    timestamps: true,
+    createdAt: 'fecha_creacion',
+    updatedAt: 'fecha_actualizacion'
 });
 
 

@@ -1,15 +1,15 @@
 import { DataTypes } from 'sequelize';
 
-// Impotamos el objeto de conexión
+//Importamos el objeto de conexión
 import sequelize from '../database/db.js';
 
 
 // Creamos el esquema del modelo
-const PreguntaPrueba = sequelize.define('pregunta_prueba', {
+const PreguntaConfiguracion = sequelize.define('preguntasConfig', {
     id: {
         type: DataTypes.INTEGER,
-        primaryKey: true,
-        autoIncrement: true
+        autoIncrement: true,
+        primaryKey: true
     },
     pregunta_id: {
         type: DataTypes.INTEGER,
@@ -19,18 +19,19 @@ const PreguntaPrueba = sequelize.define('pregunta_prueba', {
             key: 'id'
         }
     },
-    prueba_id: {
+    configuracion_categoria_id: {  
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-            model: 'pruebas',
+            model: 'configuraciones_categorias',
             key: 'id'
         }
-    }
+    },
 }, {
-    timestamps: false
+    timestamps: true,
+    createdAt: 'fecha_creacion',
+    updatedAt: 'fecha_actualizacion'
 });
 
-
-// Exportamos el modelo 
-export default PreguntaPrueba;
+// Exportamos el modelo
+export default PreguntaConfiguracion;

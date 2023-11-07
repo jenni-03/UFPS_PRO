@@ -9,6 +9,9 @@ import generateRole from './util/generateRole.js';
 import createAdminUser from './util/createAdminUser.js';
 import pino_http from 'pino-http';
 import pino from 'pino';
+import helmet from 'helmet';
+import bodyParser from 'body-parser';
+import Rol from './models/Rol.js';
 
 // Importamos las tablas a crear
 import './database/associations.js';
@@ -30,8 +33,10 @@ const PORT = process.env.PORT || 3500;
 
 
 // Middlwares
+app.use(helmet());
 app.use(cors(corsOptions));
 app.use(express.json());
+app.use(bodyParser.json({ limit: '15mb' }));
 app.use(cookieParser());
 app.use(pino_http({
 
@@ -113,18 +118,26 @@ const main = async () => {
         // Sincroniza las tablas
         await sequelize.sync();
     
-        // Crea los roles y el usuario admin
-        generateRole();
-        createAdminUser();
+        // Crea los roles
+        await generateRole();
+
+        // Crea el usuario administrador
+        await createAdminUser();
     
         // Inicia el servidor una vez que las tablas se sincronicen
-        app.listen(PORT, () => {
-          logger.info(`App is running on http://localhost:${PORT}`);
+        const server = app.listen(PORT, () => {
+          logger.info({ status: 'Bienvenido, iniciando servidor....',  }, `App is running on http://localhost:${PORT}`);
         });
 
-      } catch (err) {
-        logger.error(`Error al sincronizar con la BD: ${err.message}`);
-      }
+        // Configuramos los tiempos de espera del servidor
+        server.timeout = 30000;
+        server.keepAliveTimeout = 10000;
+        server.headersTimeout = 20000;
+        server.requestTimeout = 15000;
+
+    } catch (err) {
+        logger.error(err, `Error al intentar sincronizar con la BD`);
+    }
 
 }
 

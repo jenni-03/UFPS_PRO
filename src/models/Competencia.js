@@ -18,23 +18,26 @@ const Competencia = sequelize.define('competencias', {
             notEmpty:{
                 msg: "El nombre de la competencia no puede ser vacio"
             }
+        },
+        unique: {
+            name: "nombre_competencia",
+            msg: "Nombre de competencia ya en uso"
         }
     },
     descripcion: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        validate: {
-            notEmpty:{
-                msg: "La descripción de la competencia no puede ser vacia"
-            }
-        }
+        type: DataTypes.TEXT,
+        allowNull: false
     },
     estado: {
         type: DataTypes.BOOLEAN,
         defaultValue: true
     }
 }, {
-    timestamps: false
+    paranoid: true,
+    deletedAt: 'fecha_inactivacion',
+    timestamps: true,
+    createdAt: 'fecha_creacion',
+    updatedAt: 'fecha_actualizacion'
 });
 
 // Exportamos el modelo

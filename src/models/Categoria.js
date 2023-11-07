@@ -18,16 +18,15 @@ const Categoria = sequelize.define('categorias', {
             notEmpty:{
                 msg: "El nombre de la categoria no puede ser vacio"
             }
+        },
+        unique: {
+            name: "nombre_categoria",
+            msg: "Nombre de categoria ya en uso"
         }
     },
     descripcion: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        validate: {
-            notEmpty:{
-                msg: "La descripción de la categoria no puede ser vacia"
-            }
-        }
+        type: DataTypes.TEXT,
+        allowNull: false
     },
     estado: {
         type: DataTypes.BOOLEAN,
@@ -42,7 +41,11 @@ const Categoria = sequelize.define('categorias', {
         }
     }
 }, {
-    timestamps: false
+    paranoid: true,
+    deletedAt: 'fecha_inactivacion',
+    timestamps: true,
+    createdAt: 'fecha_creacion',
+    updatedAt: 'fecha_actualizacion'
 });
 
 // Exportamos el modelo

@@ -20,7 +20,7 @@ const Prueba = sequelize.define('pruebas', {
         }
     },
     descripcion: {
-        type: DataTypes.STRING,
+        type: DataTypes.TEXT,
         allowNull: false
     },
     semestre: {
@@ -45,7 +45,11 @@ const Prueba = sequelize.define('pruebas', {
         defaultValue: 500
     }
 }, {
-    timestamps: false
+    paranoid: true,
+    deletedAt: 'fecha_inactivacion',
+    timestamps: true,
+    createdAt: 'fecha_creacion',
+    updatedAt: 'fecha_actualizacion'
 });
 
 

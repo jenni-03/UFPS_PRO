@@ -21,20 +21,13 @@ const Convocatoria = sequelize.define('convocatorias', {
         }
     },
     descripcion: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        validate: {
-            notEmpty: {
-                msg: "La descripcion de la competencia no puede ser vacia"
-            }
-        }
+        type: DataTypes.TEXT,
+        allowNull: false
     },
     fecha_inicio: {
         type: DataTypes.DATE,
+        allowNull: false,
         validate: {
-            notEmpty: {
-                msg: "La fecha de inicio de la convocatoria no puede ser vacia"
-            },
             isDate: {
                 msg: "Favor ingresar un formato de fecha valido"
             }
@@ -42,10 +35,8 @@ const Convocatoria = sequelize.define('convocatorias', {
     },
     fecha_fin: {
         type: DataTypes.DATE,
+        allowNull: false,
         validate: {
-            notEmpty: {
-                msg: "La fecha de finalizacion de la convocatoria no puede ser vacia"
-            },
             isDate: {
                 msg: "Favor ingresar un formato de fecha valido"
             }
@@ -64,7 +55,11 @@ const Convocatoria = sequelize.define('convocatorias', {
         }
     }
 }, {
-    timestamps: false
+    paranoid: true,
+    deletedAt: 'fecha_inactivacion',
+    timestamps: true,
+    createdAt: 'fecha_creacion',
+    updatedAt: 'fecha_actualizacion'
 });
 
 

@@ -39,7 +39,11 @@ const Resultado = sequelize.define('resultados', {
         }
     }
 }, {
-    timestamps: false
+    paranoid: true,
+    deletedAt: 'fecha_inactivacion',
+    timestamps: true,
+    createdAt: 'fecha_creacion',
+    updatedAt: 'fecha_actualizacion'
 });
 
 //Exportsamos el modelo

@@ -24,14 +24,14 @@ const errorHandler = (err, req, res, next) => {
     
     else if (err) {
 
-        req.log.error(err.stack);
+        req.log.error(err, 'Error inesperado en la aplicación');
 
         // Definimos el error a mostrar
         const status = err.status || 500;
 
         res.status(status);
 
-        res.json({error: err.message});
+        res.json({error: 'Error inseperado en la aplicacion, favor ponerse en contacto con el soporte adecuado'});
 
     }
 

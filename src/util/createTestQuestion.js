@@ -1,5 +1,5 @@
 import Pregunta from '../models/Pregunta.js';
-import PreguntaPrueba from '../models/PreguntaPrueba.js';
+//import PreguntaPrueba from '../models/PreguntaPrueba.js';
 import lodash from 'lodash';
 import PruebaCompetencia from '../models/PruebaCompetencia.js';
 

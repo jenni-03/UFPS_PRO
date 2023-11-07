@@ -13,21 +13,11 @@ const Pregunta = sequelize.define('preguntas', {
     },
     texto_pregunta: {
         type: DataTypes.TEXT,
-        allowNull: false,
-        validate: {
-            notEmpty:{
-                msg: "El texto de la pregunta no puede ser vacio"
-            }
-        }
+        allowNull: false
     },
     semestre: {
         type: DataTypes.INTEGER,
-        allowNull: false,
-        validate: {
-            notEmpty:{
-                msg: "El semestre no puede ser vacio"
-            }
-        }
+        allowNull: false
     },
     opciones: {
         type: DataTypes.TEXT,
@@ -47,7 +37,7 @@ const Pregunta = sequelize.define('preguntas', {
         allowNull: false,
         validate: {
             notEmpty: {
-                msg: "Las opciones no pueden ser vacias"
+                msg: "La respuesta no pueden ser vacia"
             }
         }
     },
@@ -64,7 +54,11 @@ const Pregunta = sequelize.define('preguntas', {
         }
     }
 }, {
-    timestamps: false
+    paranoid: true,
+    deletedAt: 'fecha_inactivacion',
+    timestamps: true,
+    createdAt: 'fecha_creacion',
+    updatedAt: 'fecha_actualizacion'
 });
 
 
