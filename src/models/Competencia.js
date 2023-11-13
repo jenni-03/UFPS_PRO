@@ -5,7 +5,7 @@ import sequelize from '../database/db.js';
 
 
 // Creamos el esquema del modelo
-const Competencia = sequelize.define('competencias', {
+const Competencia = sequelize.define('Competencias', {
     id: {
         type: DataTypes.INTEGER,
         autoIncrement: true,
@@ -33,11 +33,10 @@ const Competencia = sequelize.define('competencias', {
         defaultValue: true
     }
 }, {
-    paranoid: true,
-    deletedAt: 'fecha_inactivacion',
     timestamps: true,
     createdAt: 'fecha_creacion',
-    updatedAt: 'fecha_actualizacion'
+    updatedAt: 'fecha_actualizacion',
+    freezeTableName: true
 });
 
 // Exportamos el modelo

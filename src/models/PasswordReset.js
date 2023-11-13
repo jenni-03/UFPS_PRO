@@ -4,7 +4,7 @@ import { DataTypes } from 'sequelize';
 import sequelize from '../database/db.js';
 
 // Creamos el esquema del modelo
-const PasswordReset = sequelize.define('password_resets', {
+const PasswordReset = sequelize.define('Password_resets', {
     id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
@@ -29,7 +29,7 @@ const PasswordReset = sequelize.define('password_resets', {
     usuario_id: {
         type: DataTypes.INTEGER,
         references: {
-            model: 'usuarios',
+            model: 'Usuarios',
             key: 'id'
         },
         allowNull: false
@@ -37,7 +37,8 @@ const PasswordReset = sequelize.define('password_resets', {
 }, {
     timestamps: true,
     updatedAt: 'lastUpdate',
-    createdAt: false
+    createdAt: false,
+    freezeTableName: true
 });
 
 

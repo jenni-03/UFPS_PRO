@@ -5,7 +5,7 @@ import sequelize from '../database/db.js';
 
 
 // Creamos el esquema del modelo
-const Convocatoria = sequelize.define('convocatorias', {
+const Convocatoria = sequelize.define('Convocatorias', {
     id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
@@ -50,16 +50,15 @@ const Convocatoria = sequelize.define('convocatorias', {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-            model: 'pruebas',
+            model: 'Pruebas',
             key: 'id'
         }
     }
 }, {
-    paranoid: true,
-    deletedAt: 'fecha_inactivacion',
     timestamps: true,
     createdAt: 'fecha_creacion',
-    updatedAt: 'fecha_actualizacion'
+    updatedAt: 'fecha_actualizacion',
+    freezeTableName: true
 });
 
 

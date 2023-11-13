@@ -5,7 +5,7 @@ import sequelize from '../database/db.js';
 
 
 // Creamos el esquema del modelo
-const Pregunta = sequelize.define('preguntas', {
+const Pregunta = sequelize.define('Preguntas', {
     id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
@@ -49,16 +49,15 @@ const Pregunta = sequelize.define('preguntas', {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-            model: 'categorias',
+            model: 'Categorias',
             key: 'id'
         }
     }
 }, {
-    paranoid: true,
-    deletedAt: 'fecha_inactivacion',
     timestamps: true,
     createdAt: 'fecha_creacion',
-    updatedAt: 'fecha_actualizacion'
+    updatedAt: 'fecha_actualizacion',
+    freezeTableName: true
 });
 
 

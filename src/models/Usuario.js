@@ -8,7 +8,7 @@ import sequelize from '../database/db.js';
 
 
 // Creamos el esquema del modelo
-const User = sequelize.define('usuarios', {
+const User = sequelize.define('Usuarios', {
     id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
@@ -114,7 +114,7 @@ const User = sequelize.define('usuarios', {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-            model: 'roles',
+            model: 'Roles',
             key: 'id'
         }
     }
@@ -147,7 +147,8 @@ const User = sequelize.define('usuarios', {
     deletedAt: 'fecha_inactivacion',
     timestamps: true,
     createdAt: 'fecha_creacion',
-    updatedAt: 'fecha_actualizacion'
+    updatedAt: 'fecha_actualizacion',
+    freezeTableName: true
 });
 
 

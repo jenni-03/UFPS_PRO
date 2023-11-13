@@ -5,7 +5,7 @@ import sequelize from '../database/db.js';
 
 
 // Creamos el esquema del modelo
-const PruebaCompetencia = sequelize.define('pruebas_competencias', {
+const PruebaCompetencia = sequelize.define('Pruebas_competencias', {
     id: {
         type: DataTypes.INTEGER,
         autoIncrement: true,
@@ -15,7 +15,7 @@ const PruebaCompetencia = sequelize.define('pruebas_competencias', {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-            model: 'pruebas',
+            model: 'Pruebas',
             key: 'id'
         }
     },
@@ -23,14 +23,15 @@ const PruebaCompetencia = sequelize.define('pruebas_competencias', {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-            model: 'competencias',
+            model: 'Competencias',
             key: 'id'
         }
     }
 }, {
     timestamps: true,
     createdAt: 'fecha_creacion',
-    updatedAt: 'fecha_actualizacion'
+    updatedAt: 'fecha_actualizacion',
+    freezeTableName: true
 });
 
 // Exportamos el modelo

@@ -66,11 +66,6 @@ app.use(pino_http({
         return `${req.method} operacion completada`;
     },
 
-    // Mensaje de recibido
-    customReceivedMessage: function (req, res) {
-        return 'Solicitud recibida: ' + req.method
-    },
-
     // Sobrescritura de las llaves del objeto log
     customAttributeKeys: {
         req: 'request',

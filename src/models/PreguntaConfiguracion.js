@@ -5,7 +5,7 @@ import sequelize from '../database/db.js';
 
 
 // Creamos el esquema del modelo
-const PreguntaConfiguracion = sequelize.define('preguntasConfig', {
+const PreguntaConfiguracion = sequelize.define('PreguntaConfig', {
     id: {
         type: DataTypes.INTEGER,
         autoIncrement: true,
@@ -15,7 +15,7 @@ const PreguntaConfiguracion = sequelize.define('preguntasConfig', {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-            model: 'preguntas',
+            model: 'Preguntas',
             key: 'id'
         }
     },
@@ -23,14 +23,15 @@ const PreguntaConfiguracion = sequelize.define('preguntasConfig', {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-            model: 'configuraciones_categorias',
+            model: 'Configuraciones_categorias',
             key: 'id'
         }
     },
 }, {
     timestamps: true,
     createdAt: 'fecha_creacion',
-    updatedAt: 'fecha_actualizacion'
+    updatedAt: 'fecha_actualizacion',
+    freezeTableName: true
 });
 
 // Exportamos el modelo

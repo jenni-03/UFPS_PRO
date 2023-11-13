@@ -5,7 +5,7 @@ import sequelize from '../database/db.js';
 
 
 // Creamos el esquema del modelo
-const ConfiguracionCategoria = sequelize.define('configuraciones_categorias', {
+const ConfiguracionCategoria = sequelize.define('Configuraciones_categorias', {
     id: {
         type: DataTypes.INTEGER,
         autoIncrement: true,
@@ -33,7 +33,7 @@ const ConfiguracionCategoria = sequelize.define('configuraciones_categorias', {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-            model: 'pruebas',
+            model: 'Pruebas',
             key: 'id'
         }
     },
@@ -41,16 +41,15 @@ const ConfiguracionCategoria = sequelize.define('configuraciones_categorias', {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-            model: 'categorias',
+            model: 'Categorias',
             key: 'id'
         }
     }
 }, {
-    paranoid: true,
-    deletedAt: 'fecha_inactivacion',
     timestamps: true,
     createdAt: 'fecha_creacion',
-    updatedAt: 'fecha_actualizacion'
+    updatedAt: 'fecha_actualizacion',
+    freezeTableName: true
 });
 
 export default ConfiguracionCategoria;

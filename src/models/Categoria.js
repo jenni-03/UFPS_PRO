@@ -5,7 +5,7 @@ import sequelize from '../database/db.js';
 
 
 // Creamos el esquema del modelo
-const Categoria = sequelize.define('categorias', {
+const Categoria = sequelize.define('Categorias', {
     id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
@@ -36,16 +36,15 @@ const Categoria = sequelize.define('categorias', {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-            model: 'competencias',
+            model: 'Competencias',
             key: 'id'
         }
     }
 }, {
-    paranoid: true,
-    deletedAt: 'fecha_inactivacion',
     timestamps: true,
     createdAt: 'fecha_creacion',
-    updatedAt: 'fecha_actualizacion'
+    updatedAt: 'fecha_actualizacion',
+    freezeTableName: true
 });
 
 // Exportamos el modelo

@@ -5,7 +5,7 @@ import sequelize from '../database/db.js';
 
 
 // Creamos el esquema del modelo rol
-const Rol = sequelize.define('roles', {
+const Rol = sequelize.define('Roles', {
     id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
@@ -20,11 +20,10 @@ const Rol = sequelize.define('roles', {
         }
     }
 }, {
-    paranoid: true,
-    deletedAt: 'fecha_inactivacion',
     timestamps: true,
     createdAt: 'fecha_creacion',
-    updatedAt: 'fecha_actualizacion'
+    updatedAt: 'fecha_actualizacion',
+    freezeTableName: true
 });
 
 

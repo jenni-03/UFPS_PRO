@@ -5,7 +5,7 @@ import sequelize from '../database/db.js';
 
 
 // Creamos el esquema del modelo
-const Prueba = sequelize.define('pruebas', {
+const Prueba = sequelize.define('Pruebas', {
     id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
@@ -45,11 +45,10 @@ const Prueba = sequelize.define('pruebas', {
         defaultValue: 500
     }
 }, {
-    paranoid: true,
-    deletedAt: 'fecha_inactivacion',
     timestamps: true,
     createdAt: 'fecha_creacion',
-    updatedAt: 'fecha_actualizacion'
+    updatedAt: 'fecha_actualizacion',
+    freezeTableName: true
 });
 
 

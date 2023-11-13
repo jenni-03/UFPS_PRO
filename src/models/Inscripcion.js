@@ -7,7 +7,7 @@ import sequelize from '../database/db.js';
 
 
 // Creamos el esquema del modelo
-const Inscripcion = sequelize.define('inscripciones', {
+const Inscripcion = sequelize.define('Inscripciones', {
     id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
@@ -52,7 +52,7 @@ const Inscripcion = sequelize.define('inscripciones', {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-            model: 'usuarios',
+            model: 'Usuarios',
             key: 'id'
         }
     },
@@ -60,7 +60,7 @@ const Inscripcion = sequelize.define('inscripciones', {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-            model: 'convocatorias',
+            model: 'Convocatorias',
             key: 'id'
         },
     }
@@ -83,7 +83,8 @@ const Inscripcion = sequelize.define('inscripciones', {
     deletedAt: 'fecha_inactivacion',
     timestamps: true,
     createdAt: 'fecha_creacion',
-    updatedAt: 'fecha_actualizacion'
+    updatedAt: 'fecha_actualizacion',
+    freezeTableName: true
 });
 
 
