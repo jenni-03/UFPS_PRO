@@ -1,6 +1,6 @@
 import Categoria from '../models/Categoria.js';
 import Competencia from '../models/Competencia.js';
-import sequelize from '../database/db.js';
+import Sequelize from '../database/db.js';
 import Pregunta from '../models/Pregunta.js';
 
 
@@ -14,12 +14,14 @@ const getCategorias = async (req, res, next) => {
     try{
 
         // Obtenemos las categorias
-        /*const categorias = await Categoria.findAll({
+        const categorias = await Categoria.findAll({
             where: {
                 estado: state
             },
             attributes: [
-                ['nombre', 'nombre_categoria'],
+                ['id', 'id'],
+                ['nombre', 'nombre'],
+                ['estado', 'estado'],
                 [Sequelize.fn('COUNT', Sequelize.col('Preguntas.id')), 'total_preguntas']
             ],
             include: [
@@ -37,41 +39,11 @@ const getCategorias = async (req, res, next) => {
                 }
             ],
             group: ['Categorias.id', 'Categorias.nombre']
-        });*/
+        });
 
-        const [resultados] = await sequelize.query(`
-            SELECT 
-                c.nombre AS categoria, c.id AS id,
-                COUNT(p.id) AS total_preguntas,
-                p.semestre
-            FROM 
-                Categorias c
-                LEFT JOIN Preguntas p ON c.id = p.categoria_id
-            WHERE
-                c.estado = ${state}
-            GROUP BY 
-                c.id, 
-                p.semestre
-            ORDER BY 
-                c.id, 
-                p.semestre
-        `);
-
-        console.log(resultados);
-
-        const resultadosFinales = resultados.reduce((categorias, resultado) => {
-        let categoria = categorias.find(c => c.categoria === resultado.categoria);
-        if (!categoria) {
-            categoria = { categoria: resultado.categoria, total_preguntas: 0, semestre: Array(10).fill(0) };
-            categorias.push(categoria);
-        }
-        categoria.total_preguntas += resultado.total_preguntas;
-        categoria.semestre[resultado.semestre - 1] = resultado.total_preguntas;
-        return categorias;
-        }, []);
 
         // Respondemos al usuario
-        res.status(200).json(resultadosFinales);
+        res.status(200).json(categorias);
 
     }catch(err){
         const errorGetCat = new Error(`Ocurrio un problema al obtener las categorias - ${err.message}`);
@@ -80,33 +52,6 @@ const getCategorias = async (req, res, next) => {
     }
 
 };
-
-async function obtenerTotalPreguntasPorCategoria() {
-    try {
-      const resultados = await Categoria.findAll({
-        attributes: [
-          ['nombre', 'nombre_categoria'],
-          [Sequelize.fn('COUNT', Sequelize.col('Preguntas.id_pregunta')), 'total_preguntas']
-        ],
-        include: [
-          {
-            model: Pregunta,
-            attributes: [],
-            where: {
-              categoria_id: Sequelize.col('Categoria.id_categoria') // Condicional para la relación
-            }
-          }
-        ],
-        group: ['Categoria.id_categoria', 'Categoria.nombre']
-      });
-  
-      return resultados;
-    } catch (error) {
-      console.error('Error al obtener el total de preguntas por categoría:', error);
-      throw error;
-    }
-  }
-  
 
 
 /* --------- getCategoriaById function -------------- */
