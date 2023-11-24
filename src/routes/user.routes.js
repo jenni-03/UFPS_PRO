@@ -28,12 +28,6 @@ const router = Router();
 router.get('/profile', [ extractToken, verifyJWT ], userController.getProfile);
 
 
-// @desc Endpoint encargado de la creación de un nuevo estudiante
-// @route POST /api/user/student/create
-// @access solo Admin
-router.post('/student/create', [ extractToken, verifyJWT, isAdmin, validateStudentData ], userController.createStudent);
-
-
 // @desc Endpoint encargado de la obtención de todos los estudiantes activos
 // @route GET /api/user/student
 // @access solo Admin
@@ -112,6 +106,12 @@ router.put('/admin/updatePhoto', [limiter, extractToken, verifyJWT, isAdmin, upl
 // @route PUT /api/user/updatePassword
 // @access solo Usuarios
 router.put('/updatePassword', [limiter, extractToken, verifyJWT], userController.updatePassword);
+
+
+// @desc Endpoint encargado de la desvinculación de un estudiante de la plataforma
+// @route DELETE /api/user/deleteStudent/:id
+// @access solo Admin
+router.delete('/deleteStudent/:id', [extractToken, verifyJWT, isAdmin], userController.deleteStudent);
 
 
 // Importamos el router

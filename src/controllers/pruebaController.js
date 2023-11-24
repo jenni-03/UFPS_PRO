@@ -32,7 +32,9 @@ const getAllTests = async (req, res, next) => {
         res.status(200).json(pruebas)
 
     }catch(error){
-        next(new Error(`Ocurrio un problema al obtener las pruebas: ${error.message}`));
+        const errorGetTest = new Error(`Ocurrio un problema al obtener las pruebas - ${err.message}`);
+        errorGetTest.stack = error.stack; 
+        next(errorGetTest);
     }
 
 };
@@ -70,7 +72,9 @@ const getTestId = async (req, res, next) => {
         res.status(200).json(prueba);
 
     }catch(error){
-        next(new Error(`Ocurrio un problema al obtener la prueba por su identificador: ${error.message}`));
+        const errorGetTestId = new Error(`Ocurrio un problema al obtener la prueba especificada - ${err.message}`);
+        errorGetTestId.stack = error.stack; 
+        next(errorGetTestId);
     }
 
 };

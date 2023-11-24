@@ -4,7 +4,7 @@ import XLSX from "xlsx";
 
 // Funciones de utilidad
 import validateSeqOptions from '../util/seqOptions.js';
-import { validateAnswers, removeQuestionsRepeat } from '../util/verifyAnswers.js';
+import { validateAnswers, removeQuestionsRepeat, posicionEnAlfabeto } from '../util/verifyAnswers.js';
 import { uploadImage, updateFile } from '../libs/cloudinary.js';
 
 
@@ -32,7 +32,9 @@ const getAllQuestions = async (req, res, next) => {
         res.status(200).json(questions);
 
     }catch(error){
-        next(new Error(`Ocurrio un problema al obtener las preguntas: ${error.message}`));
+        const errorGetPre = new Error(`Ocurrio un problema al obtener las preguntas - ${err.message}`);
+        errorGetPre.stack = err.stack; 
+        next(errorGetPre);
     }
 
 };
@@ -55,6 +57,7 @@ const createQuestion = async (req, res, next) => {
         const categoriaExist = await Categoria.findByPk(parseInt(categoria_id));
 
         if(!categoriaExist){
+            req.log.warn(`El usuario con id ${req.user.id} intento vincular una categoria inexsistente al momento de crear una pregunta.`);
             return res.status(400).json({error: "La categoria proporcionada no corresponde con ninguna existente"});
         }
 
@@ -76,7 +79,9 @@ const createQuestion = async (req, res, next) => {
         res.status(200).json({ message: 'Pregunta creada satisfactoriamente' });
 
     } catch (err) {
-        next(new Error(`Ocurrio un problema al intentar crear la pregunta: ${err.message}`));
+        const errorCreateQues = new Error(`Ocurrio un problema al crear la pregunta - ${err.message}`);
+        errorCreateQues.stack = err.stack; 
+        next(errorCreateQues);
     }
 
 }
@@ -99,6 +104,7 @@ const createImageQuestion = async (req, res, next) => {
         const categoriaExist = await Categoria.findByPk(valid_categoria_id);
 
         if(!categoriaExist){
+            req.log.warn(`El usuario con id ${req.user.id} intento vincular una categoria inexsistente al momento de crear una pregunta con imagen.`);
             return res.status(400).json({error: "La categoria proporcionada no corresponde a ninguna existente"});
         }
 
@@ -144,7 +150,9 @@ const createImageQuestion = async (req, res, next) => {
         });
 
     } catch (err) {
-        next(`Ocurrio un problema al intentar crear la pregunta con imagen: ${err.message}`);
+        const errorCreateImageQues = new Error(`Ocurrio un problema al intentar crear la pregunta con imagen - ${err.message}`);
+        errorCreateImageQues.stack = err.stack; 
+        next(errorCreateImageQues);
     }
 
 }
@@ -261,12 +269,16 @@ const createQuestions = async (req, res, next) => {
         const preguntas = await Promise.all(questions);
 
         const existQuestions = await Pregunta.findAll({
-            attributes: ['texto_pregunta']
+            attributes: ['texto_pregunta'],
+            raw: true
         });
 
-        const newQuestions = preguntas.filter(question => {
-            return !existQuestions.some(existQuestion => existQuestion.texto_pregunta === question.texto_pregunta);
-        });
+
+        // Crear un conjunto con los textos de las preguntas existentes
+        const existQuestionsTextsSet = new Set(existQuestions.map(question => question.texto_pregunta));
+
+        // Filtrar solo las preguntas que no existen en la base de datos
+        const newQuestions = preguntas.filter(question => !existQuestionsTextsSet.has(question.texto_pregunta));
 
 
         // Aseguramos que no existan repetidos dentro del array de preguntas
@@ -284,7 +296,9 @@ const createQuestions = async (req, res, next) => {
         res.status(200).json({ message });
 
     }catch(err){
-        next(new Error(`Ocurrio un problema al procesar el archivo de preguntas: ${err.message}`));
+        const errorCreateFileQues = new Error(`Ocurrio un problema al intentar procesar el archivo de preguntas - ${err.message}`);
+        errorCreateFileQues.stack = err.stack; 
+        next(errorCreateFileQues);
     }
 
 }
@@ -319,22 +333,22 @@ const getQuestionById = async (req, res, next) => {
             return opcion.replace(/\n/g, " ")
         });
 
-        // Formateamos la respuesta
-        const response = pregunta.respuesta.replace(/\n/g, " ");
 
         // Respondemos al usuario
         res.status(200).json({
             enunciado: pregunta.texto_pregunta,
             opciones: formatedOptions,
-            respuesta: response,
+            respuesta: pregunta.respuesta,
             estado: pregunta.estado,
             semestre: pregunta.semestre,
-            categoria: pregunta.categoria.nombre,
+            categoria: pregunta.Categoria.nombre,
             imageFile: pregunta.imagen !== null ? pregunta.imagen.url : ''
         });
 
     }catch(err){
-        next(`Ocurrio un problema al obtener los datos de la pregunta especificada: ${err.message}`);
+        const errorGetQuesId = new Error(`Ocurrio un problema al obtener los datos de la pregunta especificada - ${err.message}`);
+        errorGetQuesId.stack = err.stack; 
+        next(errorGetQuesId);
     }
 
 };
@@ -357,6 +371,7 @@ const actualizarPregunta = async (req, res, next) => {
         const pregunta = await Pregunta.findByPk(id);
 
         if(!pregunta){
+            req.log.warn(`El usuario con id ${req.user.id} intento acceder a una pregunta con identificador inexistente.`);
             return res.status(400).json({error: 'No se encuentra ninguna pregunta con el id especificado'});
         }
         
@@ -373,6 +388,7 @@ const actualizarPregunta = async (req, res, next) => {
         const categoriaExist = await Categoria.findByPk(categoria_id);
 
         if(!categoriaExist){
+            req.log.warn(`El usuario con id ${req.user.id} intento vincular una categoria inexsistente al momento de actualizar la pregunta ${pregunta.id}.`);
             return res.status(400).json({error: "El id de categoria proporcionado no corresponde a ninguna existente"});
         }
 
@@ -426,7 +442,9 @@ const actualizarPregunta = async (req, res, next) => {
         res.status(200).json({ message: "Pregunta actualizada correctamente" });
 
     }catch(err){
-        next(new Error(`Ocurrio un problema al actualizar la pregunta: ${err.message}`));
+        const errorUpdateQues = new Error(`Ocurrio un problema al actualizar la pregunta - ${err.message}`);
+        errorUpdateQues.stack = err.stack; 
+        next(errorUpdateQues);
     }
 
 };

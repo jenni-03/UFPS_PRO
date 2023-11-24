@@ -1,8 +1,5 @@
 import { Op } from 'sequelize';
 import Usuario from '../models/Usuario.js';
-import password_generator from 'generate-password';
-import encryptPasswd from '../util/encryptPassword.js';
-import generateCorreo from '../util/emailGenerator.js';
 import bcrypt from 'bcrypt';
 import { uploadImage, updateFile } from '../libs/cloudinary.js';
 
@@ -18,7 +15,7 @@ const getProfile = async (req, res, next) => {
 
         let excluded_attributes;
 
-        type === 'Director' ? excluded_attributes = ['password', 'rol_id', 'estado', 'semestre'] : excluded_attributes = ['telefono', 'direccion', 'documento', 'celular', 'foto_perfil', 'password', 'rol_id', 'estado'];
+        type === 'Director' ? excluded_attributes = ['password', 'rol_id', 'estado', 'semestre', 'fecha_creacion', 'fecha_actualizacion', 'fecha_inactivacion'] : excluded_attributes = ['telefono', 'direccion', 'documento', 'celular', 'foto_perfil', 'password', 'rol_id', 'estado', 'fecha_creacion', 'fecha_actualizacion', 'fecha_inactivacion'];
 
         // Buscamos el usuario
         const existUser = await Usuario.findByPk(id, {
@@ -28,7 +25,9 @@ const getProfile = async (req, res, next) => {
         return res.status(200).json(existUser);
 
     }catch(error){
-        next(new Error(`Ocurrio un problema al obtener el perfil del usuario: ${error.message}`));
+        const errorGetPerfil = new Error(`Ocurrio un problema al obtener el perfil del usuario - ${err.message}`);
+        errorGetPerfil.stack = error.stack; 
+        next(errorGetPerfil);
     }
 
 };
@@ -49,14 +48,16 @@ const getStudents =  async (req, res, next) => {
                 tipo: 'Estudiante', 
                 estado: state
             },
-            attributes: ['id', 'nombre', 'apellido', 'email', 'estado']
+            attributes: ['id', 'nombre', 'codigo', 'apellido', 'email', 'estado']
         });
 
         // Respondemos al usuario
         res.status(200).json(students);
 
     } catch (error) {
-        next(new Error(`Ocurrio un problema al obtener los estudiantes: ${error.message}`));
+        const errorGetEst = new Error(`Ocurrio un problema al intentar obtener los estudiantes - ${err.message}`);
+        errorGetEst.stack = error.stack; 
+        next(errorGetEst);
     }
     
 };
@@ -89,7 +90,9 @@ const getStudentById = async (req, res, next) => {
         res.status(200).json(student);
 
     } catch (error) {
-        next(new Error(`Ocurrio un problema al obtener la informacion del estudiante especificado: ${error.message}`));
+        const errorGetEstId = new Error(`Ocurrio un problema al intentar obtener la información del estudiante especificado - ${err.message}`);
+        errorGetEstId.stack = error.stack; 
+        next(errorGetEstId);
     }
 
 };
@@ -125,69 +128,14 @@ const updateStudentData = async (req, res, next) => {
         res.status(200).json({ message: "Actualización realizada correctamente" });
 
     } catch (error) {
-        next(new Error(`Ocurrio un problema al actualizar el estudiante especificado: ${error.message}`));
+        const errorUpdtEst = new Error(`Ocurrio un problema al actualizar el estudiante especificado - ${err.message}`);
+        errorUpdtEst.stack = error.stack; 
+        next(errorUpdtEst);
     }
 }
 
 
 // ------------ Métodos para el Director (sobre el estudiante) ------------------
-
-
-/* --------- createStudent function -------------- */
-
-const createStudent =  async (req, res, next) => {
-
-    // Obtenemos los datos de el estudiante a crear
-    const {nombre, apellido, codigo, email, semestre} = req.body; 
-
-    try {
-
-        //Validamos que el código y email sea único
-        const studentExist = await Usuario.findOne({
-            where: {
-                [Op.or]: [
-                    {codigo},
-                    {email}
-                ]
-            }
-        });
-
-        if(studentExist){
-            return res.status(400).json({error: 'El usuario ya se encuentra registrado'});
-        }
-
-        // Generamos la contraseña
-        const password = password_generator.generate({
-            length: 15,
-            numbers: true
-        });
-
-        // Ciframos la contraseña
-        const hashedPassword = await encryptPasswd(password);
-
-        // Creamos el usuario
-        await Usuario.create({
-            nombre,
-            apellido,
-            codigo,
-            email,
-            password: hashedPassword,
-            tipo: 'Estudiante',
-            semestre,
-            rol_id: 2
-        });
-
-        // Enviamos correo de confirmación de registro
-        await generateCorreo(`${nombre} ${apellido}`, email, password, 'Registro', 'Registro de estudiantes');
-
-        // Respondemos al usuario
-        res.status(200).json({ message: 'Usuario creado exitosamente' });
-
-    } catch (error) {
-        next(new Error(`Ocurrio un problema al intentar añadir el estudiante: ${error.message}`));
-    }
-
-};
 
 
 /* --------- updateStudentDir function -------------- */
@@ -226,8 +174,8 @@ const updateStudentDataDir = async (req, res, next) => {
         })
 
         if(studentExist && studentExist.id !== student.id){
-            req.log.warn(`El usuario con id ${req.user.id} esta tratando de asignar un codio o email de estudiante actualmente en uso`);
-            return res.status(400).json({error: "El codigo y email de el estudiante deben ser unico"});
+            req.log.warn(`El usuario con id ${req.user.id} esta tratando de asignar un codigo o email de estudiante actualmente en uso`);
+            return res.status(400).json({error: "El código y email del estudiante deben ser únicos"});
         }
 
         // Actualizamos el estudiante
@@ -244,7 +192,9 @@ const updateStudentDataDir = async (req, res, next) => {
         return res.status(200).json({ message: 'Estudiante actualizado correctamente' });
 
     } catch (error) {
-        next(new Error(`Ocurrio un problema al intentar actualizar el estudiante: ${error.message}`));
+        const errorUpdtEstDir = new Error(`Ocurrio un problema al intentar actualizar el estudiante - ${err.message}`);
+        errorUpdtEstDir.stack = error.stack; 
+        next(errorUpdtEstDir);
     }
 }
 
@@ -265,7 +215,9 @@ const getDirectors =  async (req, res, next) => {
         res.status(200).json(directors);
 
     } catch (error) {
-        next(new Error(`Ocurrio un problema al obtener los datos de los directores: ${error.message}`));
+        const errorGetDir = new Error(`Ocurrio un problema al intentar obtener los datos de los directores - ${err.message}`);
+        errorGetDir.stack = error.stack; 
+        next(errorGetDir);
     }
 };
 
@@ -296,7 +248,9 @@ const getDirectorById = async (req, res) => {
         res.status(200).json(director);
 
     } catch (error) {
-        next(new Error(`Ocurrio un problema al obtener los datos del director: ${error.message}`));
+        const errorGetDirId = new Error(`Ocurrio un problema al intentar obtener los datos del director - ${err.message}`);
+        errorGetDirId.stack = error.stack; 
+        next(errorGetDirId);
     }
 };
 
@@ -351,7 +305,9 @@ const updateDirector = async (req, res, next) => {
         res.status(200).json({ message: "Datos actualizados correctamente" });
 
     } catch (error) {
-        next(new Error(`Ocurrio un problema al actualizar los datos del director: ${error.message}`));
+        const errorUpdtDir = new Error(`Ocurrio un problema al actualizar los datos del director - ${err.message}`);
+        errorUpdtDir.stack = error.stack; 
+        next(errorUpdtDir);
     }
 };
 
@@ -398,7 +354,9 @@ const updatePhotoDirector = async (req, res, next) => {
         });
     
     } catch (error) {
-        next(new Error(`Ocurrio un problema al actualizar la foto del administrador: ${error.message}`));
+        const errorUpdtPhotoDir = new Error(`Ocurrio un problema al actualizar la foto del administrador - ${err.message}`);
+        errorUpdtPhotoDir.stack = error.stack; 
+        next(errorUpdtPhotoDir);
     }
 };
 
@@ -427,7 +385,7 @@ const updatePassword = async (req, res, next) => {
         }
 
         // Hasheamos la nueva contraseña
-        const genSalt = await bcrypt.genSalt(11);
+        const genSalt = await bcrypt.genSalt(12);
         const hash = await bcrypt.hash(newPassword, genSalt);
 
         // Actualizamos la contraseña del administrador
@@ -438,24 +396,60 @@ const updatePassword = async (req, res, next) => {
         res.status(200).json({message:"Contraseña cambiada correctamente"});
 
     }catch(error){
-        next(new Error(`Ocurrio un problema al cambiar la contraseña del administrador: ${error.message}`));
+        const errorUpdtPassDir = new Error(`Ocurrio un problema al intentar cambiar la contrasenia - ${err.message}`);
+        errorUpdtPassDir.stack = error.stack; 
+        next(errorUpdtPassDir);
     }
 
 };
+
+
+/* --------- deleteStudent function -------------- */
+
+const deleteStudent = async (req, res, next) => {
+
+    // Obtenemos el identificador del estudiante
+    const { id } = req.params;
+
+    try{
+
+        // Verificamos la existencia del usuario
+        const user = await Usuario.findByPk(id);
+
+        if (!user){
+            req.log.warn('Intento de desvinculación de un usuario inexistente');
+            return res.status(400).json({error: 'No se encontro al usuario especificado'});
+        }
+
+        if (user.tipo !== 'Estudiante') return res.status(400).json({error: 'Acción no permitida'});
+
+        // Eliminamos la cuenta del usuario
+        await user.destroy();
+
+        res.status(200).json({message: "El usuario ha sido desvinculado de la plataforma correctamente"});
+
+    }catch(error){
+        const errorDelUser = new Error(`Ocurrio un problema al intentar desvincular al estudiante - ${err.message}`);
+        errorDelUser.stack = error.stack; 
+        next(errorDelUser);
+    }
+
+};
+
 
 const userController = { 
 
     getStudents,
     getStudentById,
     updateStudentData,
-    createStudent,
     updateStudentDataDir,
     getDirectors,
     getDirectorById,
     updateDirector,
     updatePhotoDirector,
     updatePassword,
-    getProfile
+    getProfile,
+    deleteStudent
 
 }
 
