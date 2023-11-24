@@ -5,7 +5,7 @@ import sequelize from '../database/db.js';
 
 
 // Creamos el esquema del modelo
-const Convocatoria = sequelize.define('convocatorias', {
+const Convocatoria = sequelize.define('Convocatorias', {
     id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
@@ -21,20 +21,13 @@ const Convocatoria = sequelize.define('convocatorias', {
         }
     },
     descripcion: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        validate: {
-            notEmpty: {
-                msg: "La descripcion de la competencia no puede ser vacia"
-            }
-        }
+        type: DataTypes.TEXT,
+        allowNull: false
     },
     fecha_inicio: {
         type: DataTypes.DATE,
+        allowNull: false,
         validate: {
-            notEmpty: {
-                msg: "La fecha de inicio de la convocatoria no puede ser vacia"
-            },
             isDate: {
                 msg: "Favor ingresar un formato de fecha valido"
             }
@@ -42,10 +35,8 @@ const Convocatoria = sequelize.define('convocatorias', {
     },
     fecha_fin: {
         type: DataTypes.DATE,
+        allowNull: false,
         validate: {
-            notEmpty: {
-                msg: "La fecha de finalizacion de la convocatoria no puede ser vacia"
-            },
             isDate: {
                 msg: "Favor ingresar un formato de fecha valido"
             }
@@ -59,12 +50,15 @@ const Convocatoria = sequelize.define('convocatorias', {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-            model: 'pruebas',
+            model: 'Pruebas',
             key: 'id'
         }
     }
 }, {
-    timestamps: false
+    timestamps: true,
+    createdAt: 'fecha_creacion',
+    updatedAt: 'fecha_actualizacion',
+    freezeTableName: true
 });
 
 

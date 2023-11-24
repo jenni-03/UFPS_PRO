@@ -67,7 +67,7 @@ const notification_response = (userName, convocatoria_name) => {
         body: {
             greeting: 'Cordial saludo',
             name: userName,
-            intro: `Te queremos comunicar que has sido seleccionado para participal de la convocatoria ${convocatoria_name} próxima a iniciarse`,
+            intro: `Te queremos comunicar que has sido seleccionado para participar de la convocatoria ${convocatoria_name} próxima a iniciarse`,
             outro: "Favor ingresar a su apartado de usuario para más información",
             signature: 'Atentamente, el equipo de desarrollo de ing. de sistemas'
         }

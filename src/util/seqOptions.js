@@ -1,4 +1,9 @@
 
+/**
+ * Función encargada de validar que cada una de las opciones pasadas al excel sean de manera secuencial
+ * @param {object} options 
+ * @returns boolean
+ */
 function validateSeqOptions(options) {
 
     for (let index = 0; index < options.length - 1; index++) {

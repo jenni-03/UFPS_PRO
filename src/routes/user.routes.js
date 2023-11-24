@@ -28,12 +28,6 @@ const router = Router();
 router.get('/profile', [ extractToken, verifyJWT ], userController.getProfile);
 
 
-// @desc Endpoint encargado de la creación de un nuevo estudiante
-// @route POST /api/user/student/create
-// @access solo Admin
-router.post('/student/create', [ extractToken, verifyJWT, isAdmin, validateStudentData ], userController.createStudent);
-
-
 // @desc Endpoint encargado de la obtención de todos los estudiantes activos
 // @route GET /api/user/student
 // @access solo Admin
@@ -47,7 +41,7 @@ router.get('/student/:id', [ extractToken, verifyJWT, isAdmin, validateStudentDa
 
 
 // @desc Endpoint encargado de la actualización de los datos de contacto de un estudiante por el mismo a partir de su id
-// @route PUT /api/user/student/update/:id
+// @route PUT /api/user/student/update
 // @access Estudiante
 router.put('/student/update', [ limiter, extractToken, verifyJWT, validateStudentData ], userController.updateStudentData);
 
@@ -108,10 +102,16 @@ const upload = multer({
 router.put('/admin/updatePhoto', [limiter, extractToken, verifyJWT, isAdmin, upload.single('avatar'), filePayloadExists, fileExtLimiter(["image/jpeg", "image/png"]), fileSizeLimiter], userController.updatePhotoDirector);
 
 
-// @desc Endpoint encargado de la actualización de la contraseña de un admin
+// @desc Endpoint encargado de la actualización de la contraseña de un usuario
 // @route PUT /api/user/updatePassword
-// @access solo Admin
+// @access solo Usuarios
 router.put('/updatePassword', [limiter, extractToken, verifyJWT], userController.updatePassword);
+
+
+// @desc Endpoint encargado de la desvinculación de un estudiante de la plataforma
+// @route DELETE /api/user/deleteStudent/:id
+// @access solo Admin
+router.delete('/deleteStudent/:id', [extractToken, verifyJWT, isAdmin], userController.deleteStudent);
 
 
 // Importamos el router

@@ -1,9 +1,9 @@
 import Usuario from '../models/Usuario.js';
 import Rol from '../models/Rol.js';
-import bcrypt from 'bcrypt';
 import logger from '../middlewares/logger.js';
 import validateData from './validateData.js';
 import { directorSchema } from '../schemas/userSchema.js';
+
 
 // Función encargada de crear el usuario administrador
 const createAdminUser = async () => {
@@ -42,18 +42,12 @@ const createAdminUser = async () => {
 
             }
 
-            const getSalt = await bcrypt.genSalt(11);
-            const hashed = await bcrypt.hash('Director1234', getSalt);
-
             const errors = validateData(directorSchema, newAdmin);
-
-            // Reasignamos la contraseña 
-            newAdmin.password = hashed;
 
             if (errors.length > 0) throw new Error(errors.join(', '));
 
             // Creamos el usuario - en caso de que todo haya ido bien
-            await Usuario.create({
+            const admin = await Usuario.create({
                 nombre: newAdmin.nombre,
                 apellido: newAdmin.apellido,
                 codigo: newAdmin.codigo,
@@ -67,14 +61,15 @@ const createAdminUser = async () => {
                 rol_id: newAdmin.rol_id
             });
 
-            logger.info('Usuario administrador creado correctamente');
+            logger.info(
+                { user_id: admin.id, user_name: admin.nombre, user_email: admin.email 
+                }, 'Usuario administrador creado correctamente');
 
         }
 
 
     }catch(error){
-        console.log(error.stack);
-        logger.error(`Error al crear usuario administrador: ${error.message}`);
+        logger.error(error, `Error al crear intentar crear usuario administrador`);
     }
 
 };

@@ -32,7 +32,9 @@ const getAllTests = async (req, res, next) => {
         res.status(200).json(pruebas)
 
     }catch(error){
-        next(new Error(`Ocurrio un problema al obtener las pruebas: ${error.message}`));
+        const errorGetTest = new Error(`Ocurrio un problema al obtener las pruebas - ${err.message}`);
+        errorGetTest.stack = error.stack; 
+        next(errorGetTest);
     }
 
 };
@@ -70,7 +72,9 @@ const getTestId = async (req, res, next) => {
         res.status(200).json(prueba);
 
     }catch(error){
-        next(new Error(`Ocurrio un problema al obtener la prueba por su identificador: ${error.message}`));
+        const errorGetTestId = new Error(`Ocurrio un problema al obtener la prueba especificada - ${err.message}`);
+        errorGetTestId.stack = error.stack; 
+        next(errorGetTestId);
     }
 
 };
@@ -164,11 +168,11 @@ const updateTest = async (req, res, next) => {
         // Validamos que los nuevos porcentajes sean coincidentes
         let valor_total_categorias = 0;
 
-        // Validamos que los datos ingresados para las categotrias 
-        // de la competencia generica sean correctos (si aplica)
+        // Validamos los porcentajes ingresados para las categotrias 
+        // no supere el maximo posible
         for (const valores of valoresCategorias){
                 
-            valor_total_categorias += validate_percentage_categories(valores);;
+            valor_total_categorias += validate_percentage_categories(valores);
             
         }
 
@@ -227,9 +231,6 @@ const testController = {
     getAllTests,
     getTestId, 
     createTest,
-    asignCompetences,
-    asignValueCategories,
-    asignQuestions,
     updateTest
 };
 

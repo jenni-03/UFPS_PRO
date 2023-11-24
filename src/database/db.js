@@ -12,8 +12,8 @@ const sequelize = new Sequelize(database, username, password, {
     pool: {
         max: 70,
         min: 0,
-        acquire: 3000, // Tiempo requerido para buscar una conexión libre
-        idle: 1000 // Tiempo maximo en el que una conexión esta inactiva
+        acquire: 350, // Tiempo requerido para buscar una conexión libre
+        idle: 10000 // Tiempo maximo en el que una conexión esta inactiva
     },
     logging: false
 });

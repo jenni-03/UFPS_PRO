@@ -1,5 +1,7 @@
 import Categoria from '../models/Categoria.js';
 import Competencia from '../models/Competencia.js';
+import Sequelize from '../database/db.js';
+import Pregunta from '../models/Pregunta.js';
 
 
 /* --------- getCategorias function -------------- */
@@ -16,18 +18,37 @@ const getCategorias = async (req, res, next) => {
             where: {
                 estado: state
             },
-            attributes: ['id', 'nombre', 'estado'],
-            include: {
-                model: Competencia,
-                attributes: ['nombre']
-            }
+            attributes: [
+                ['id', 'id'],
+                ['nombre', 'nombre'],
+                ['estado', 'estado'],
+                [Sequelize.fn('COUNT', Sequelize.col('Preguntas.id')), 'total_preguntas']
+            ],
+            include: [
+                {
+                    model: Competencia,
+                    attributes: ['nombre']
+                },
+                {
+                    model: Pregunta,
+                    attributes: [],
+                    where: {
+                        categoria_id: Sequelize.col('Categorias.id') // Condicional para la relación
+                    },
+                    required: false
+                }
+            ],
+            group: ['Categorias.id', 'Categorias.nombre']
         });
+
 
         // Respondemos al usuario
         res.status(200).json(categorias);
 
     }catch(err){
-        next(new Error(`Ocurrio un problema al obtener las categorias: ${err.message}`));
+        const errorGetCat = new Error(`Ocurrio un problema al obtener las categorias - ${err.message}`);
+        errorGetCat.stack = err.stack; 
+        next(errorGetCat);
     }
 
 };
@@ -52,6 +73,7 @@ const getCategoriaById = async (req, res, next) => {
         });
 
         if(!categoria){
+            req.log.warn(`El usuario con id ${req.user.id} intento acceder a una categoria no especificada`);
             return res.status(400).json({error: 'No se encuentra ninguna categoria con el id especificado'});
         }
 
@@ -59,7 +81,9 @@ const getCategoriaById = async (req, res, next) => {
         res.status(200).json(categoria);
 
     }catch(err){
-        next(new Error(`Ocurrio un problema al obtener los datos de la categoria especificada: ${err.message}`));
+        const errorGetCatId = new Error(`Ocurrio un problema al obtener los datos de la categoria especificada - ${err.message}`);
+        errorGetCatId.stack = err.stack; 
+        next(errorGetCatId);
     }
 
 };
@@ -90,7 +114,10 @@ const createCategoria = async (req, res, next) => {
         
 
         // Comprobamos que el id de la competencia corresponda a uno válido
-        if(!competencia_exist) return res.status(400).json({error: 'El id de competencia proporcionado no corresponde con ninguna existente'});
+        if(!competencia_exist) {
+            req.log.warn(`Intento de asociacion de una competencia inexistente a una nueva categoria por parte del usuario con id ${req.user.id}`);
+            return res.status(400).json({error: 'El id de competencia proporcionado no corresponde con ninguna existente'});
+        }
         
 
         // Creamos la categoria
@@ -104,7 +131,9 @@ const createCategoria = async (req, res, next) => {
         res.status(200).json({ message: 'Categoria creada exitosamente' });
 
     }catch(err){
-        next(new Error(`Ocurrio un problema al crear la categoria: ${err.message}`));
+        const errorCreateCat = new Error(`Ocurrio un problema al crear la categoria - ${err.message}`);
+        errorCreateCat.stack = err.stack; 
+        next(errorCreateCat);
     }
 
 };
@@ -137,14 +166,20 @@ const updateCategoria = async (req, res, next) => {
         ]);
         
         // Verificamos la categoria
-        if(!categoria) return res.status(400).json({error: 'No se encuentra ninguna categoria con el id especificado'});
+        if(!categoria) {
+            req.log.warn(`El usuario con id ${req.user.id} intento acceder a una categoria no especificada`);
+            return res.status(400).json({error: 'No se encuentra ninguna categoria con el id especificado'})
+        };
         
         // Comprobamos que el nombre sea unico 
         if(categoriaExist && categoriaExist.nombre !== categoria.nombre) return res.status(400).json({error: `El nombre de la categoria ${nombre} ya se encuentra registrado`});
         
 
         // Comprobamos que el id de la competencia corresponda a uno válido
-        if(!competencia_exist) return res.status(400).json({error: 'El id de la competencia proporcionado no corresponde con ninguna existente'});
+        if(!competencia_exist) {
+            req.log.warn(`Intento de asociacion de una competencia inexistente a una nueva categoria por parte del usuario con id ${req.user.id}`);
+            return res.status(400).json({error: 'El id de la competencia proporcionado no corresponde con ninguna existente'})
+        };
     
         // Actualizamos la categoria
         await categoria.update({
@@ -158,7 +193,9 @@ const updateCategoria = async (req, res, next) => {
         res.status(200).json({ message: 'Categoria actualizada correctamente' });
 
     }catch(err){
-        next(new Error(`Ocurrio un problema al actualizar la categoria: ${err.message}`));
+        const errorUpdateCat = new Error(`Ocurrio un problema al actualizar la categoria - ${err.message}`);
+        errorUpdateCat.stack = err.stack; 
+        next(errorUpdateCat);
     }
 
 };

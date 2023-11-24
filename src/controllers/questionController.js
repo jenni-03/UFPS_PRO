@@ -4,7 +4,7 @@ import XLSX from "xlsx";
 
 // Funciones de utilidad
 import validateSeqOptions from '../util/seqOptions.js';
-import { validateAnswers, removeQuestionsRepeat } from '../util/verifyAnswers.js';
+import { validateAnswers, removeQuestionsRepeat, posicionEnAlfabeto } from '../util/verifyAnswers.js';
 import { uploadImage, updateFile } from '../libs/cloudinary.js';
 
 
@@ -32,7 +32,9 @@ const getAllQuestions = async (req, res, next) => {
         res.status(200).json(questions);
 
     }catch(error){
-        next(new Error(`Ocurrio un problema al obtener las preguntas: ${error.message}`));
+        const errorGetPre = new Error(`Ocurrio un problema al obtener las preguntas - ${err.message}`);
+        errorGetPre.stack = err.stack; 
+        next(errorGetPre);
     }
 
 };
@@ -55,6 +57,7 @@ const createQuestion = async (req, res, next) => {
         const categoriaExist = await Categoria.findByPk(parseInt(categoria_id));
 
         if(!categoriaExist){
+            req.log.warn(`El usuario con id ${req.user.id} intento vincular una categoria inexsistente al momento de crear una pregunta.`);
             return res.status(400).json({error: "La categoria proporcionada no corresponde con ninguna existente"});
         }
 
@@ -76,7 +79,9 @@ const createQuestion = async (req, res, next) => {
         res.status(200).json({ message: 'Pregunta creada satisfactoriamente' });
 
     } catch (err) {
-        next(new Error(`Ocurrio un problema al intentar crear la pregunta: ${err.message}`));
+        const errorCreateQues = new Error(`Ocurrio un problema al crear la pregunta - ${err.message}`);
+        errorCreateQues.stack = err.stack; 
+        next(errorCreateQues);
     }
 
 }
@@ -99,6 +104,7 @@ const createImageQuestion = async (req, res, next) => {
         const categoriaExist = await Categoria.findByPk(valid_categoria_id);
 
         if(!categoriaExist){
+            req.log.warn(`El usuario con id ${req.user.id} intento vincular una categoria inexsistente al momento de crear una pregunta con imagen.`);
             return res.status(400).json({error: "La categoria proporcionada no corresponde a ninguna existente"});
         }
 
@@ -144,7 +150,9 @@ const createImageQuestion = async (req, res, next) => {
         });
 
     } catch (err) {
-        next(`Ocurrio un problema al intentar crear la pregunta con imagen: ${err.message}`);
+        const errorCreateImageQues = new Error(`Ocurrio un problema al intentar crear la pregunta con imagen - ${err.message}`);
+        errorCreateImageQues.stack = err.stack; 
+        next(errorCreateImageQues);
     }
 
 }
@@ -191,6 +199,13 @@ const createQuestions = async (req, res, next) => {
                 res.status(400);
                 throw new Error('El semestre debe ser un número entre 1 y 10');
 
+            }
+
+            // Validamos la opción de respuesta
+            const regexAnswer = /^[a-zA-Z]{1}$/;
+            if(!regexAnswer.test(itemFila['Respuesta'])){
+                res.status(400);
+                throw new Error('La respuesta a la pregunta debe corresponder a una de las opciones disponibles');
             }
 
 
@@ -251,23 +266,25 @@ const createQuestions = async (req, res, next) => {
 
         
         // Filtramos las preguntas para eliminar las que ya existen en la BD
-        const newQuestions = await Promise.all(
-            questions.map(async question => {
-                const pregunta_limpia = await question
-                const exists = await Pregunta.findOne({
-                    where: { texto_pregunta: pregunta_limpia.texto_pregunta }
-                });
-                return exists ? null : question;
-            })
-        );
+        const preguntas = await Promise.all(questions);
 
-        // eliminamos los valores nulos del array (repetidos)
-        const filteredBDQuestions = newQuestions.filter(Boolean);
+        const existQuestions = await Pregunta.findAll({
+            attributes: ['texto_pregunta'],
+            raw: true
+        });
+
+
+        // Crear un conjunto con los textos de las preguntas existentes
+        const existQuestionsTextsSet = new Set(existQuestions.map(question => question.texto_pregunta));
+
+        // Filtrar solo las preguntas que no existen en la base de datos
+        const newQuestions = preguntas.filter(question => !existQuestionsTextsSet.has(question.texto_pregunta));
+
 
         // Aseguramos que no existan repetidos dentro del array de preguntas
         let finalQuestions = [];
 
-        if (filteredBDQuestions.length > 0) finalQuestions = removeQuestionsRepeat(filteredBDQuestions);
+        if (newQuestions.length > 0) finalQuestions = removeQuestionsRepeat(newQuestions);
 
         // Insertamos todas las preguntas unicas a la vez
         await Pregunta.bulkCreate(finalQuestions);
@@ -279,7 +296,9 @@ const createQuestions = async (req, res, next) => {
         res.status(200).json({ message });
 
     }catch(err){
-        next(new Error(`Ocurrio un problema al procesar el archivo de preguntas: ${err.message}`));
+        const errorCreateFileQues = new Error(`Ocurrio un problema al intentar procesar el archivo de preguntas - ${err.message}`);
+        errorCreateFileQues.stack = err.stack; 
+        next(errorCreateFileQues);
     }
 
 }
@@ -314,22 +333,22 @@ const getQuestionById = async (req, res, next) => {
             return opcion.replace(/\n/g, " ")
         });
 
-        // Formateamos la respuesta
-        const response = pregunta.respuesta.replace(/\n/g, " ");
 
         // Respondemos al usuario
         res.status(200).json({
             enunciado: pregunta.texto_pregunta,
             opciones: formatedOptions,
-            respuesta: response,
+            respuesta: pregunta.respuesta,
             estado: pregunta.estado,
             semestre: pregunta.semestre,
-            categoria: pregunta.categoria.nombre,
-            imageFile: pregunta.imagen !== null ? JSON.parse(pregunta.imagen).url : ''
+            categoria: pregunta.Categoria.nombre,
+            imageFile: pregunta.imagen !== null ? pregunta.imagen.url : ''
         });
 
     }catch(err){
-        next(`Ocurrio un problema al obtener los datos de la pregunta especificada: ${err.message}`);
+        const errorGetQuesId = new Error(`Ocurrio un problema al obtener los datos de la pregunta especificada - ${err.message}`);
+        errorGetQuesId.stack = err.stack; 
+        next(errorGetQuesId);
     }
 
 };
@@ -352,6 +371,7 @@ const actualizarPregunta = async (req, res, next) => {
         const pregunta = await Pregunta.findByPk(id);
 
         if(!pregunta){
+            req.log.warn(`El usuario con id ${req.user.id} intento acceder a una pregunta con identificador inexistente.`);
             return res.status(400).json({error: 'No se encuentra ninguna pregunta con el id especificado'});
         }
         
@@ -368,8 +388,16 @@ const actualizarPregunta = async (req, res, next) => {
         const categoriaExist = await Categoria.findByPk(categoria_id);
 
         if(!categoriaExist){
+            req.log.warn(`El usuario con id ${req.user.id} intento vincular una categoria inexsistente al momento de actualizar la pregunta ${pregunta.id}.`);
             return res.status(400).json({error: "El id de categoria proporcionado no corresponde a ninguna existente"});
         }
+
+        // Validamos que la respuesta se encuentre entre las opciones disponibles
+        if(posicionEnAlfabeto(respuesta) > new_options.length) return res.status(400).json({ error: 'La respuesta debe coincidir con alguna de las opciones disponibles' });
+
+        // Validamos que ninguna de las respuestas se repita
+        if (!validateAnswers(new_options)) return res.status(400).json({ error: 'Ninguna de las opciones de respuesta puede repetirse' });
+
 
         // Actualizamos la pregunta
         await pregunta.update({
@@ -394,10 +422,8 @@ const actualizarPregunta = async (req, res, next) => {
             // Subimos la nueva imagen
             if (pregunta.imagen === null){
                 result = await uploadImage(req.file.path, imageName);
-                console.log('Esta creando');
             }else{
-                result = await updateFile(req.file.path, JSON.parse(pregunta.imagen).public_id);
-                console.log('Esta actualizando');
+                result = await updateFile(req.file.path, pregunta.imagen.public_id);
             }
 
             // Definimos los atributos a almacenar
@@ -416,7 +442,9 @@ const actualizarPregunta = async (req, res, next) => {
         res.status(200).json({ message: "Pregunta actualizada correctamente" });
 
     }catch(err){
-        next(new Error(`Ocurrio un problema al actualizar la pregunta: ${err.message}`));
+        const errorUpdateQues = new Error(`Ocurrio un problema al actualizar la pregunta - ${err.message}`);
+        errorUpdateQues.stack = err.stack; 
+        next(errorUpdateQues);
     }
 
 };

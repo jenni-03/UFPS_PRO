@@ -20,7 +20,7 @@ export const competenceSchema = z.object({
                 required_error: 'La descripcion de la competencia es requerida'
             })
             .min(10, { message: 'La descripcion de la competencia es muy corta' })
-            .max(240, { message: 'La descripcion de la competencia supera la cant. de caracteres permitidos' }),
+            .max(300, { message: 'La descripcion de la competencia supera la cant. de caracteres permitidos' }),
 
         estado: z
             .boolean({ 

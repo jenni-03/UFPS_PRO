@@ -1,71 +1,74 @@
-import nodeMailer from 'nodemailer';
+
 import mailGen from 'mailgen';
 import crypto from 'crypto';
 import PasswordReset from '../models/PasswordReset.js';
 import bcrypt from 'bcrypt';
-import configuration from '../config.js';
+import mail_rover from './mailRover.js';
 import logger from '../middlewares/logger.js';
 import dayjs from 'dayjs';
+import configuration from '../config.js';
 
 
-// Obtenemos las credenciales del correo
-const { email_address, email_password } = configuration;
 
-
-/** Función encargada de el envio de correo para el restablecimiento de contraseña de un 
- *  usuario
+/**
+ * Función encargada de el envio de correo para el restablecimiento de contraseña de un usuario
+ * @param {object} user 
+ * @param {string} redirectURL 
  */
-const sendResetEmail = async (user, redirectURL) => {
+const sendResetEmail = (user, redirectURL) => {
 
-    try{
+    return new Promise((resolve, reject) => {
 
         const {id, email, nombre, apellido} = user;
 
         // Generamos la cadena de reseteo
         const resetString = crypto.randomBytes(64).toString('hex') + id;
 
-        const hashedString = await hashResetString(id, resetString);
-
         // Creamos o actualizamos el registro de restablecimiento
-        updateRecordReset(id, hashedString);
+        updateRecordReset(id, resetString);
 
-        // Crear un objeto de configuración con las credenciales
-        let config = {
-            service: 'gmail',
-            auth: {
-                user: email_address,
-                pass: email_password
-            },
-            port: 465,
-            secure: true
-        };
-
-        // Creamos el objeto transportador
-        const transporter = nodeMailer.createTransport(config);
 
         // Creamos la estructura del email y generamos el HTML
         const emailBody = createEmailEstructure(id, nombre, apellido, redirectURL, resetString);
 
-        // Configuramos el origen y destinatario
-        const message = {
-            from: email_address,
-            to: email,
-            subject: "Restablecimiento de contraseña",
-            html: emailBody
-        }
+        // Definimos el objeto que envia el correo
+        mail_rover()
+            .then(async transporter => {
 
-        // Enviamos el correo electronico
-        await transporter.sendMail(message);
-        logger.info('Email de restablecimiento enviado correctamente');
-        
+                // Configuramos el origen y destinatario
+                const message = {
+                    from: configuration.email_address,
+                    to: email,
+                    subject: "Restablecimiento de contraseña",
+                    html: emailBody
+                }
 
-    }catch(error){
-        throw new Error(`Error al enviar email de restablecimiento: ${error.message}`);
-    }
+                await transporter.sendMail(message, (error, info) => {
+
+                    if (error) reject(error);
+                    else {
+                        logger.info(`Email de restablecimiento enviado al correo ${email}`);
+                        resolve();
+                    }
+
+                });
+
+            })
+            .catch(err => {
+                reject(new Error(`Error al enviar el email de restablecimiento - ${err.message}`));
+            });
+
+    });
 
 }
 
 
+/**
+ * Función encargada de encriptar la cadena de restablecimiento de contraseña
+ * @param {number} id 
+ * @param {string} resetString 
+ * @returns a hashed string
+ */
 const hashResetString = async (id, resetString) => {
 
     // Hasheamos la cadena de restablecimiento
@@ -77,14 +80,23 @@ const hashResetString = async (id, resetString) => {
 }
 
 
-const updateRecordReset = async (id, hashedString) => {
+/**
+ * Función encargada de crear o actualizar el registro de restablecimiento de contraseña según sea el caso
+ * @param {number} id 
+ * @param {string} hashedString 
+ */
+const updateRecordReset = async (id, resetString) => {
 
-    // Verificamos si el usuario ya posee un registro de restablecimiento
-    const existingReset = await PasswordReset.findOne({
-        where: {
-            usuario_id: id
-        }
-    });
+    // Hasheamos la cadena de restablecimiento y verificamos si el usuario ya posee un registro de restablecimiento
+    const [ hashedString, existingReset ] = await Promise.all([
+        hashResetString(id, resetString),
+        PasswordReset.findOne({
+            where: {
+                usuario_id: id
+            }
+        })
+    ]);
+
 
     if (existingReset){
 
@@ -112,6 +124,15 @@ const updateRecordReset = async (id, hashedString) => {
 }
 
 
+/**
+ * Función encargada de crear el cuerpo del correo de restablecimiento de contraseña
+ * @param {number} id 
+ * @param {string} nombre 
+ * @param {string} apellido 
+ * @param {string} redirectURL 
+ * @param {string} resetString 
+ * @returns body reset password email
+ */
 const createEmailEstructure = (id, nombre, apellido, redirectURL, resetString) => {
 
     const mailGenerator = new mailGen({

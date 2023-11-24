@@ -24,6 +24,7 @@ export const login = async (req, res, next) => {
         });
 
         if(!userFound || !userFound.estado){
+            req.log.warn({ user: userFound !== null ? [ userFound.id, userFound.nombre ] : 'usuario no registrado' }, 'Intento de acceso no autorizado');
             return res.status(401).json({ error: 'Credenciales incorrectas' });
         }
 
@@ -38,11 +39,12 @@ export const login = async (req, res, next) => {
         const accessToken = jwt.sign({
             id: userFound.id,
             username: email,
+            nombre: userFound.nombre,
             tipo: userFound.tipo
         }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
 
-        // Creamos el token de refresco
-        const refreshToken = jwt.sign(
+        // Creamos el token de refresco - inactivo mientras se decide si se implementa
+        /*const refreshToken = jwt.sign(
             {
                 id: userFound.id,
                 username: email,
@@ -58,7 +60,7 @@ export const login = async (req, res, next) => {
             secure: false,
             sameSite: 'Lax',
             maxAge: 5 * 24 * 60 * 1000
-        });
+        });*/
 
         // Enviamos el token de acceso al usuario
         res.json({
@@ -69,7 +71,9 @@ export const login = async (req, res, next) => {
         });
 
     }catch(error){
-        next(new Error(`Ocurrio un problema al intentar iniciar sesion: ${error.message}`));
+        const errorLogin = new Error(`Ocurrio un problema al intentar iniciar sesión - ${err.message}`);
+        errorLogin.stack = err.stack; 
+        next(errorLogin);
     }
 
 };
@@ -166,7 +170,8 @@ export const requestPasswordRst = async (req, res, next) => {
         });
 
         if(!user || !user.estado){
-            return res.status(400).json({ error: 'El email proporcionado no esta autorizado para solicitar un cambio de contraseña' });
+            req.log.warn({ user: user !== null ? [user.id, user.nombre] : 'usuario no registrado' }, 'Intento de restablecimiento no autorizado');
+            return res.status(400).json({ error: 'Error al solicitar restablecimiento de contraseña' });
         }
 
         // Enviamos el email de reset
@@ -175,7 +180,9 @@ export const requestPasswordRst = async (req, res, next) => {
         res.status(200).json({message: 'Correo de restablecimiento de contraseña enviado correctamente'});
 
     }catch(err){
-        next(new Error(`Ocurrio un problema al verificar el email ${err}`));
+        const errorReqReset = new Error(`Ocurrio un problema al verificar el email de restablecimiento - ${err.message}`);
+        errorReqReset.stack = err.stack; 
+        next(errorReqReset);
     }
 
 };
@@ -198,6 +205,7 @@ export const resetPassword = async (req, res, next) => {
         });
 
         if(!password_reset){
+            req.log.warn(`El usuario con id: ${user_id} no tiene peticiones de cambio de contraseña`);
             return res.status(400).json({ error: `No existe una petición de cambio de contraseña por parte del usuario` });
         }
 
@@ -206,6 +214,7 @@ export const resetPassword = async (req, res, next) => {
 
         if(expires_At < dayjs().toDate() || password_reset.expired){
             
+            req.log.warn({ cad_restablecimiento: resetString }, `El usuario con id: ${user_id} ha intentado un restablecimiento con un link expirado`);
             return res.status(400).json({ error: `El link de restablecimiento ha expirado` });
 
         }
@@ -214,11 +223,12 @@ export const resetPassword = async (req, res, next) => {
         const match = await bcrypt.compare(resetString, password_reset.uniqueString);
 
         if(!match){
+            req.log.warn({ cad_restablecimiento: resetString }, `El usuario con id: ${user_id} ha proporcionado un link restablecimiento no valido`);
             return res.status(400).json({ error: 'La cadena de restablecimiento no coincide' });
         }
 
         // Volvemos a encriptar la nueva contraseña
-        const salt = await bcrypt.genSalt(11);
+        const salt = await bcrypt.genSalt(12);
         const hashedNewPswd = await bcrypt.hash(newPassword, salt);
 
         // Actualizamos la contraseña del usuario
@@ -238,7 +248,9 @@ export const resetPassword = async (req, res, next) => {
         res.status(200).json({ message: 'Contraseña restablecida correctamente' });
 
     }catch(err){
-        next(new Error(`Ocurrio un problema al restablecer la contrasenia del usuario ${err.message}`));
+        const errorResetPass = new Error(`Ocurrio un problema al restablecer la contraseña del usuario - ${err.message}`);
+        errorResetPass.stack = err.stack; 
+        next(errorResetPass);
     }
 
 }

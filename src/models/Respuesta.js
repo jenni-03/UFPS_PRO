@@ -5,25 +5,29 @@ import sequelize from '../database/db.js';
 
 
 // Creamos el esquema del modelo
-const PruebaCompetencia = sequelize.define('Pruebas_competencias', {
+const Respuesta = sequelize.define('Respuestas', {
     id: {
         type: DataTypes.INTEGER,
         autoIncrement: true,
         primaryKey: true
     },
-    prueba_id: {
+    opcion: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    inscripcion_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-            model: 'Pruebas',
+            model: 'Inscripciones',
             key: 'id'
         }
     },
-    competencia_id: {
+    pregunta_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-            model: 'Competencias',
+            model: 'Preguntas',
             key: 'id'
         }
     }
@@ -35,4 +39,4 @@ const PruebaCompetencia = sequelize.define('Pruebas_competencias', {
 });
 
 // Exportamos el modelo
-export default PruebaCompetencia;
+export default Respuesta;

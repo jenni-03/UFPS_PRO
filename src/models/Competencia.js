@@ -5,7 +5,7 @@ import sequelize from '../database/db.js';
 
 
 // Creamos el esquema del modelo
-const Competencia = sequelize.define('competencias', {
+const Competencia = sequelize.define('Competencias', {
     id: {
         type: DataTypes.INTEGER,
         autoIncrement: true,
@@ -18,23 +18,25 @@ const Competencia = sequelize.define('competencias', {
             notEmpty:{
                 msg: "El nombre de la competencia no puede ser vacio"
             }
+        },
+        unique: {
+            name: "nombre_competencia",
+            msg: "Nombre de competencia ya en uso"
         }
     },
     descripcion: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        validate: {
-            notEmpty:{
-                msg: "La descripción de la competencia no puede ser vacia"
-            }
-        }
+        type: DataTypes.TEXT,
+        allowNull: false
     },
     estado: {
         type: DataTypes.BOOLEAN,
         defaultValue: true
     }
 }, {
-    timestamps: false
+    timestamps: true,
+    createdAt: 'fecha_creacion',
+    updatedAt: 'fecha_actualizacion',
+    freezeTableName: true
 });
 
 // Exportamos el modelo

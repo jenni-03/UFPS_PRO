@@ -1,33 +1,36 @@
 import Rol from '../models/Rol.js';
 import logger from '../middlewares/logger.js';
 
+
 // Verificar si los roles ya existen en la BD
-const generateRole = () => {
+const generateRole = async () => {
 
-    Rol.findAndCountAll().then(result => {
+    try {
 
-        const count = result.count;
-    
-        if(count === 0) {
-    
-            // Definimos los roles a insertar
+        const result = await Rol.findAndCountAll();
+
+        if (result.count === 0) {
+
             const predefinedRoles = [
                 {nombre: 'Administrador'},
                 {nombre: 'Estudiante'}
             ];
-    
-    
-            // Creamos los roles
-            Rol.bulkCreate(predefinedRoles).then(() => {
-                logger.info('Roles predefinidos creados correctamente');
-            })
-            .catch((err) => logger.error(`Error al crear roles predefinidos: ${err.message}`));
-    
+
+            try {
+
+                await Rol.bulkCreate(predefinedRoles);
+                logger.info({ predefinedRoles }, 'Roles predefinidos creados correctamente');
+
+            } catch(err) {
+                logger.error(err, 'Error al intentar crear los roles predefinidos');
+            }
         }
+
+    } catch(err) {
+        logger.error(err, 'Error al verificar los roles existentes');
+    }
     
-    }).catch((err) => logger.error(`Error al verificar roles existentes: ${err.message}`));
-
-
 };
+
 
 export default generateRole;

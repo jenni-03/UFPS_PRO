@@ -5,7 +5,7 @@ import sequelize from '../database/db.js';
 
 
 // Creamos el esquema del modelo rol
-const Rol = sequelize.define('roles', {
+const Rol = sequelize.define('Roles', {
     id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
@@ -13,10 +13,17 @@ const Rol = sequelize.define('roles', {
     },
     nombre: {
         type: DataTypes.STRING,
-        allowNull: false
+        allowNull: false,
+        unique: {
+            name: "nombre_rol",
+            msg: "No se admite la duplicación de roles"
+        }
     }
 }, {
-    timestamps: false
+    timestamps: true,
+    createdAt: 'fecha_creacion',
+    updatedAt: 'fecha_actualizacion',
+    freezeTableName: true
 });
 
 

@@ -10,6 +10,7 @@ import XLSX from "xlsx";
 import { Op } from 'sequelize';
 import { validarFechaCoherente } from '../util/validarFechaCoherente.js';
 import dayjs from 'dayjs';
+import moment from 'moment';
 
 
 /* --------- getConvocatorias function -------------- */
@@ -27,11 +28,29 @@ const getConvocatorias = async (req, res, next) => {
             where: {
                 estado: state
             },
-            order: [['fecha_fin', 'DESC']]
+            order: [['fecha_fin', 'DESC']],
+            include: {
+                model: Prueba,
+                attributes: ['nombre']
+            }
+        });
+
+        // Formateamos las fechas de inicio y fin para su visualización en la interfaz
+        const formatedConvocatorias = convocatorias.map(convocatoria => {
+
+            return {
+                id: convocatoria.id,
+                nombre: convocatoria.nombre,
+                fecha_inicio: moment(convocatoria.fecha_inicio).local().format('DD-MM-YYYY HH:mm'),
+                fecha_fin: moment(convocatoria.fecha_fin).local().format('DD-MM-YYYY HH:mm'),
+                estado: convocatoria.estado,
+                prueba: convocatoria.prueba
+            }
+
         });
 
         // Respondemos al usuario
-        res.status(200).json(convocatorias);
+        res.status(200).json(formatedConvocatorias);
 
     } catch (error) {
         next(new Error(`Ocurrio un problema al obtener las convocatorias: ${error.message}`));
@@ -53,12 +72,22 @@ const getConvocatoriaById = async (req, res, next) => {
         const convocatoria = await Convocatoria.findByPk(id, {
             include: {
                 model: Prueba,
-                attributes: ['nombre']
+                attributes: ['id', 'nombre']
             }
         });
 
         // Respondemos al usuario
-        res.status(200).json(convocatoria);
+        res.status(200).json({
+            nombre: convocatoria.nombre,
+            descripcion: convocatoria.descripcion,
+            fecha_inicio: moment(convocatoria.fecha_inicio, 'DD-MM-YYYY HH:mm').local(),
+            fecha_fin: moment(convocatoria.fecha_fin, 'DD-MM-YYYY HH:mm').local(),
+            estado: convocatoria.estado,
+            prueba: {
+                id: convocatoria.prueba.id,
+                nombre: convocatoria.prueba.nombre
+            }
+        });
 
     } catch (error) {
         next(new Error(`Ocurrio un problema al intentar añadir el estudiante: ${error.message}`));
@@ -125,8 +154,13 @@ const createConvocatoria = async (req, res, next) => {
             }, {transaction: t});
 
 
+            const newInscripcionesData = [];
+            const existInscripcionesData = [];
+            const newStudents = [];
+
+
             // Registramos los datos de los usuarios
-            const promiseStudents = dataExcel.map( async (itemFila) => {
+            for (const itemFila of dataExcel) {
 
                 // Validar las cabeceras del archivo
                 if (!itemFila['Nombre'] || !itemFila['Apellido'] || !itemFila['Codigo'] || !itemFila['Email']
@@ -195,92 +229,98 @@ const createConvocatoria = async (req, res, next) => {
                         }
                     });
 
-                    // Creamos la inscripción
-                    await Inscripcion.create({
+                    // Agregamos la inscripción a nuestro array de inscripciones
+                    existInscripcionesData.push({
                         fecha_inscripcion: new Date(dayjs().format('YYYY-MM-DD HH:mm')),
                         usuario_id: userExist.id,
                         convocatoria_id: convocatoria.id
-                    }, {transaction: t});
+                    });
 
                     // Enviamos correo de notificacion
-                    await generateCorreo(`${nombre} ${apellido}`, email, 'Notificar', convocatoria.nombre);
+                    await generateCorreo(`${nombre} ${apellido}`, email, '', 'Notificar', convocatoria.nombre);
 
-                    return 1;
-                }
+                } else{
 
-                // Generamos la contraseña
-                const newPassword = password_generator.generate({
-                    length: 15,
-                    numbers: true
-                });
+                    // Generamos la contraseña
+                    const newPassword = password_generator.generate({
+                        length: 15,
+                        numbers: true,
+                        symbols: true
+                    });
 
-                // Ciframos la contraseña
-                const hashedPassword = await encryptPasswd(newPassword);
+                    // Ciframos la contraseña
+                    const hashedPassword = await encryptPasswd(newPassword);
 
-                return {
+                    newStudents.push({
 
-                    nombre,
-                    apellido,
-                    codigo,
-                    email,
-                    password: hashedPassword,
-                    noHashPassword: newPassword,
-                    tipo: 'Estudiante',
-                    semestre,
-                    rol_id: 2
+                        nombre,
+                        apellido,
+                        codigo,
+                        email,
+                        password: hashedPassword,
+                        noHashPassword: newPassword,
+                        tipo: 'Estudiante',
+                        semestre,
+                        rol_id: 2
+
+                    });
+
+                    // Agregamos la inscripción a nuestro array de inscripciones
+                    newInscripcionesData.push({
+                        fecha_inscripcion: new Date(dayjs().format('YYYY-MM-DD HH:mm')),
+                        usuario_id: null,
+                        convocatoria_id: convocatoria.id
+                    });
 
                 }
                 
 
-            }); 
+            }
 
-            const estudiantes = Promise.all(promiseStudents);
 
-            // Filtramos a los estudiantes nuevos
-            const newStudents = (await estudiantes).filter(student => student !== 1);
+            // Ahora obtenemos los datos a ingresar de los nuevos estudiantes
+            const secured_students = newStudents.map( (student) => {
 
-            // Ahora hasheamos la contraseña de los nuevos ingresados
-            const secured_students = await Promise.all(
-                
-                newStudents.map( async (student) => {
-
-                    const { noHashPassword, ...rest } = student;
+                const { noHashPassword, ...rest } = student;
                     
-                    return rest;
+                return rest;
 
-                })
+            });
 
-            );
-            
-            
+
             // Registramos a los estudiantes nuevos
             const created_students = await Usuario.bulkCreate(secured_students, { returning: true, transaction: t });
 
-            // Generamos la inscripción, contraseña y enviamos correo de registro
+
+            // Actualizamos el valor de las inscripciones a cada uno de los usuarios registrados
+            for (let i = 0; i < created_students.length; i++) {
+                newInscripcionesData[i].usuario_id = created_students[i].id;
+            }
+
+            // Creamos las inscripciones
+            const inscripciones = await Promise.all([
+                Inscripcion.bulkCreate(existInscripcionesData, { transaction: t }),
+                Inscripcion.bulkCreate(newInscripcionesData, { transaction: t })
+            ]);
+
+
+            // Enviamos correo de registro para cada uno de los usuarios registrados
             for (let i = 0; i < created_students.length; i++) {
 
                 const student = created_students[i];
-
-                // Creamos la inscripción a la convocatoria
-                await Inscripcion.create({
-                    fecha_inscripcion: new Date(dayjs().format('YYYY-MM-DD HH:mm')),
-                    usuario_id: student.id,
-                    convocatoria_id: convocatoria.id
-                }, {transaction: t});
 
                 // Enviamos correo de confirmación de registro
                 await generateCorreo(`${student.nombre} ${student.apellido}`, student.email, newStudents[i].noHashPassword, 'Registro', convocatoria.nombre);
                 
             }
 
-            return created_students;
+            return inscripciones;
 
         });
 
-        res.status(200).json({ message: `Se han registrado y/o notificado ${result.length} estudiantes satisfactoriamente para la convocatoria` });
+        res.status(200).json({ message: `Se han inscrito ${result.length} estudiantes satisfactoriamente para la convocatoria` });
 
     } catch (err) {
-        console.log(err);
         next(new Error(`Ocurrio un problema al intentar crear la convocatoria: ${err.message}`));
     }
 
@@ -379,19 +419,13 @@ const presentarPrueba = async (req, res) => {
 
 const updateConvocatoria = async (req, res) => {
 
+    //Obtenemos el id
+    const { id } = req.params;
+
+    // Obtenemos los datos a actualizar
+    const { nombre, prueba_id, descripcion, fecha_inicio, fecha_fin, estado } = req.body;
+
     try {
-
-        //Obtenemos el id
-        const { id } = req.params;
-
-
-        // Verificamos el id
-        const regexNum = /^[0-9]+$/;
-
-        if (!regexNum.test(id)) {
-            return res.status(400).json({ error: 'id no valido' });
-        }
-
 
         // Obtenemos la convocatoria
         const convocatoria = await Convocatoria.findByPk(id);
@@ -399,21 +433,6 @@ const updateConvocatoria = async (req, res) => {
         //Verificamos que exista la convocatoria
         if (!convocatoria) {
             return res.status(400).json({ error: 'No se encuentra ninguna convocatoria con el id especificado' });
-        }
-
-
-        // Obtenemos los datos a actualizar
-        const { nombre, prueba_id, descripcion, fecha_inicio, fecha_fin } = req.body;
-
-        // Validamos los datos a actualizar
-        if (!nombre || !prueba_id || !descripcion || !fecha_inicio || !fecha_fin) {
-            return res.status(400).json({ error: 'Todos los campos son requeridos' });
-        }
-
-        const regexData = /^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/;
-
-        if (!regexData.test(nombre) || !regexNum.test(prueba_id)) {
-            return res.status(400).json({ error: 'La sintaxis de los datos no es correcta' });
         }
 
 
@@ -426,6 +445,11 @@ const updateConvocatoria = async (req, res) => {
 
 
         // Validamos que la fechas sean coherentes
+        const inicioValido = moment(fecha_inicio, 'YYYY-MM-DD HH:mm', true).isValid();
+        const finValido = moment(fecha_fin, 'YYYY-MM-DD HH:mm', true).isValid();
+
+        if (!inicioValido || !finValido) return res.status(400).json({ error: 'Las fechas proporcionadas no poseen un formato valido' });
+
         const error_fecha = validarFechaCoherente(new Date(fecha_inicio), new Date(fecha_fin));
 
         if (error_fecha) {
@@ -437,6 +461,7 @@ const updateConvocatoria = async (req, res) => {
         await convocatoria.update({
             nombre,
             descripcion,
+            estado,
             fecha_inicio: new Date(fecha_inicio),
             fecha_fin: new Date(fecha_fin),
             prueba_id

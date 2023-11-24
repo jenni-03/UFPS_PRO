@@ -27,22 +27,22 @@ router.get('/', [extractToken, authJWT, isAdmin, validateCompetenceData], compet
 router.get('/:id', [extractToken, authJWT, isAdmin, validateCompetenceData], competenciaController.getCompetenciaById);
 
 
-// @desc Endpoint encargado de la obtención de las categorias activas asociadas a una competencia
-// @route GET /api/competencia/:id/categorias
-// @access solo Admin
-router.get('/:id/categorias', [extractToken, authJWT, isAdmin, validateCompetenceData], competenciaController.getCategoriasCompetencia);
-
-
 // @desc Endpoint encargado de la creación de una competencia
 // @route POST /api/competencia/create
 // @access solo Admin
 router.post('/create', [extractToken, authJWT, isAdmin, validateCompetenceData], competenciaController.createCompetencia);
 
 
+// @desc Endpoint encargado de la desvinculación de una categoria de su competencia
+// @route PUT /api/competencia/unlinkCategoria/:id
+// @access solo Admin
+router.put('/unlinkCategoria/:id', [extractToken, authJWT, isAdmin], competenciaController.unlinkCategoria);
+
 // @desc Endpoint encargado de la actualización de una competencia
-// @route POST /api/competencia/update/:id
+// @route PUT /api/competencia/update/:id
 // @access solo Admin
 router.put('/update/:id', [extractToken, authJWT, isAdmin, validateCompetenceData], competenciaController.updateCompetencia);
+
 
 // Exportamos el router
 export default router;

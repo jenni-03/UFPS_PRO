@@ -4,7 +4,7 @@ import { DataTypes } from 'sequelize';
 import sequelize from '../database/db.js';
 
 // Creamos el esquema del modelo
-const Resultado = sequelize.define('resultados', {
+const Resultado = sequelize.define('Resultados', {
     id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
@@ -26,7 +26,7 @@ const Resultado = sequelize.define('resultados', {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-            model: 'categorias',
+            model: 'Categorias',
             key: 'id'
         }
     },
@@ -34,12 +34,17 @@ const Resultado = sequelize.define('resultados', {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-            model: 'inscripciones',
+            model: 'Inscripciones',
             key: 'id'
         }
     }
 }, {
-    timestamps: false
+    paranoid: true,
+    deletedAt: 'fecha_inactivacion',
+    timestamps: true,
+    createdAt: 'fecha_creacion',
+    updatedAt: 'fecha_actualizacion',
+    freezeTableName: true
 });
 
 //Exportsamos el modelo

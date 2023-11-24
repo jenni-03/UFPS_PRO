@@ -5,7 +5,7 @@ import sequelize from '../database/db.js';
 
 
 // Creamos el esquema del modelo
-const ConfiguracionCategoria = sequelize.define('configuracion_categoria', {
+const ConfiguracionCategoria = sequelize.define('Configuraciones_categorias', {
     id: {
         type: DataTypes.INTEGER,
         autoIncrement: true,
@@ -16,11 +16,7 @@ const ConfiguracionCategoria = sequelize.define('configuracion_categoria', {
         allowNull: false,
         validate: {
             isNumeric: {
-                msg: "La cantidad de preguntas solo puede contener números"
-            },
-            min: {
-                args: 1,
-                msg: "La cantidad de preguntas por categoria debe ser mayor que 0"
+                msg: "La cantidad de preguntas solo puede ser numerica"
             }
         }
     },
@@ -29,15 +25,7 @@ const ConfiguracionCategoria = sequelize.define('configuracion_categoria', {
         allowNull: false,
         validate: {
             isNumeric: {
-                msg: "El valor de la categoría solo puede contener números"
-            },
-            min: {
-                args: 1,
-                msg: "El valor de la categoria debe ser mayor que 0"
-            },
-            max: {
-                args: 100,
-                msg: "El valor de la categoria debe ser menor o igual a 100"
+                msg: "El valor porcentual de la categoría solo puede numerico"
             }
         }
     },
@@ -45,7 +33,7 @@ const ConfiguracionCategoria = sequelize.define('configuracion_categoria', {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-            model: 'pruebas',
+            model: 'Pruebas',
             key: 'id'
         }
     },
@@ -53,12 +41,15 @@ const ConfiguracionCategoria = sequelize.define('configuracion_categoria', {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-            model: 'categorias',
+            model: 'Categorias',
             key: 'id'
         }
     }
 }, {
-    timestamps: false
+    timestamps: true,
+    createdAt: 'fecha_creacion',
+    updatedAt: 'fecha_actualizacion',
+    freezeTableName: true
 });
 
 export default ConfiguracionCategoria;

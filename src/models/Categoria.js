@@ -5,7 +5,7 @@ import sequelize from '../database/db.js';
 
 
 // Creamos el esquema del modelo
-const Categoria = sequelize.define('categorias', {
+const Categoria = sequelize.define('Categorias', {
     id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
@@ -18,16 +18,15 @@ const Categoria = sequelize.define('categorias', {
             notEmpty:{
                 msg: "El nombre de la categoria no puede ser vacio"
             }
+        },
+        unique: {
+            name: "nombre_categoria",
+            msg: "Nombre de categoria ya en uso"
         }
     },
     descripcion: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        validate: {
-            notEmpty:{
-                msg: "La descripción de la categoria no puede ser vacia"
-            }
-        }
+        type: DataTypes.TEXT,
+        allowNull: false
     },
     estado: {
         type: DataTypes.BOOLEAN,
@@ -37,12 +36,15 @@ const Categoria = sequelize.define('categorias', {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-            model: 'competencias',
+            model: 'Competencias',
             key: 'id'
         }
     }
 }, {
-    timestamps: false
+    timestamps: true,
+    createdAt: 'fecha_creacion',
+    updatedAt: 'fecha_actualizacion',
+    freezeTableName: true
 });
 
 // Exportamos el modelo

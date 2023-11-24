@@ -27,47 +27,9 @@ const getCompetencias = async (req, res, next) => {
         res.status(200).json(competencias);
 
     }catch(err){
-        next(new Error (`Ocurrio un problema al obtener las competencias: ${err.message}`));
-    }
-
-};
-
-
-/** -------- getCategoriasCompetencia function -------- */
-
-const getCategoriasCompetencia = async (req, res, next) => {
-
-    // Obtenemos el id de la competencia a obtener
-    const {id} = req.params;
-
-    try {
-
-        //Obtenemos la competencia
-        const competencia = await Competencia.findByPk(id, {
-            attributes: ['nombre']
-        });
-
-        if(!competencia){
-            return res.status(400).json({error: 'No se encuentra ninguna competencia con el id especificado'});
-        }
-
-        // Obtenemos las categorías asociadas a la competencia
-        const categorias = await Categoria.findAll({
-            attributes: ['id', 'nombre'],
-            where: {
-                estado: 1,
-                competencia_id: id
-            }
-        });
-
-        // Agregamos las categorías al objeto competencia
-        competencia.setDataValue('categorias', categorias);
-
-        // Respondemos al usuario
-        res.status(200).json(competencia);
-
-    }catch(error){
-        next(new Error(`Ocurrio un problema al obtener la competencia: ${err.message}`))
+        const errorGetComp = new Error(`Ocurrio un problema al obtener las competencias - ${err.message}`);
+        errorGetComp.stack = err.stack; 
+        next(errorGetComp);
     }
 
 };
@@ -87,11 +49,12 @@ const getCompetenciaById = async (req, res, next) => {
             attributes: ['nombre', 'descripcion', 'estado'],
             include: {
                 model: Categoria,
-                attributes: ['nombre']
+                attributes: ['id', 'nombre']
             }
         });
 
         if(!competencia){
+            req.log.warn(`El usuario con id ${req.user.id} intento acceder a una competencia no especificada`);
             return res.status(400).json({error: 'No se encuentra ninguna competencia con el id especificado'});
         }
 
@@ -99,7 +62,9 @@ const getCompetenciaById = async (req, res, next) => {
         res.status(200).json(competencia);
 
     }catch(err){
-        next(new Error(`Ocurrio un problema al obtener los datos de la competencia especificada: ${err.message}`))
+        const errorGetCompId = new Error(`Ocurrio un problema al obtener los datos de la competencia especificada - ${err.message}`);
+        errorGetCompId.stack = err.stack; 
+        next(errorGetCompId);
     }
 
 };
@@ -122,11 +87,12 @@ const createCompetencia = async (req, res) => {
         });
 
         if(compFound){
+            req.log.warn(`El usuario con id ${req.user.id} intento crear una competencia ya registrada`);
             return res.status(400).json({error: `El nombre de la competencia ${nombre} ya se encuentra registrado`});
         }
 
         // Creamos la competencia
-        const competencia = await Competencia.create({
+        await Competencia.create({
             nombre: nombre.toUpperCase(),
             descripcion
         });
@@ -135,7 +101,9 @@ const createCompetencia = async (req, res) => {
         res.status(200).json({ message: 'Competencia creada exitosamente' });
 
     }catch(err){
-        next(new Error(`Ocurrio un problema al crear la competencia: ${err.message}`))
+        const errorCreateComp = new Error(`Ocurrio un problema al crear la competencia - ${err.message}`);
+        errorCreateComp.stack = err.stack; 
+        next(errorCreateComp);
     }
 
 };
@@ -166,10 +134,16 @@ const updateCompetencia = async (req, res, next) => {
         ]);
 
         // verificamos la competencia
-        if(!competencia) return res.status(400).json({error: 'No se encuentra ninguna competencia con el id especificado'});
+        if(!competencia) {
+            req.log.warn(`El usuario con id ${req.user.id} intento acceder a una competencia inexistente.`);
+            return res.status(400).json({error: 'No se encuentra ninguna competencia con el id especificado'});
+        }
         
         // Comprobamos que el nombre sea unico 
-        if(compFound && competencia.nombre !== compFound.nombre) return res.status(400).json({error: `El nombre de competencia ${nombre} ya se encuentra registrado`});
+        if(compFound && competencia.nombre !== compFound.nombre) {
+            req.log.warn(`El usuario con id ${req.user.id} intento usar un nombre de competencia ya registrado`);
+            return res.status(400).json({error: `El nombre de competencia ${nombre} ya se encuentra registrado`});
+        }
         
         // Actualizamos la competencia
         await competencia.update({
@@ -195,7 +169,45 @@ const updateCompetencia = async (req, res, next) => {
         res.status(200).json({message: 'Competencia actualizada correctamente' });
 
     }catch(err){
-        next(new Error(`Ocurrio un problema al actualizar la competencia: ${err.message}`))
+        const errorUpdateComp = new Error(`Ocurrio un problema al actualizar la competencia - ${err.message}`);
+        errorUpdateComp.stack = err.stack; 
+        next(errorUpdateComp);
+    }
+
+};
+
+
+/* --------- removeCategoria function -------------- */
+
+const unlinkCategoria = async (req, res, next) => {
+
+    // Obtenemos el identificador de la categoria
+    const { categoria_id } = req.body;
+
+    try{
+
+        // Obtenemos la categoria a desasociar
+        const categoria = await Categoria.findByPk(categoria_id, {
+            include: [ Competencia ]
+        });
+            
+
+        // verificamos la categoria
+        if(!categoria) {
+            req.log.warn(`El usuario con id ${req.user.id} intento desvincular una categoria inexsistente o no asociada a la competencia especificada.`);
+            return res.status(400).json({error: 'No se encuentra ninguna categoria con el id especificado'});
+        }
+        
+        // Desvinculamos la categoria de su competencia
+        await categoria.setCompetencia(null);
+
+        // Respondemos al usuario
+        res.status(200).json({message: `Categoría ${categoria.nombre} desvinculada exitosamente` });
+
+    }catch(err){
+        const errorUnlinkCat = new Error(`Ocurrio un problema al desvincular la categoria de su competencia - ${err.message}`);
+        errorUnlinkCat.stack = err.stack; 
+        next(errorUnlinkCat);
     }
 
 };
@@ -207,7 +219,7 @@ const controller = {
     getCompetenciaById,
     createCompetencia,
     updateCompetencia,
-    getCategoriasCompetencia
+    unlinkCategoria
 
 }
 

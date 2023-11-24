@@ -6,14 +6,14 @@ const errorHandler = (err, req, res, next) => {
 
     if (err instanceof multer.MulterError) {
 
-        req.log.warn(err.stack);
-        res.status(400).json({ error: `Error de carga de archivo: ${err.message}` });
+        req.log.warn(err, `Error inesperado durante la carga de archivo: ${err.message}`);
+        res.status(400).json({ error: `Error al intentar cargar el archivo, intentelo nuevamente` });
 
     }
 
     else if (err instanceof ConnectionTimedOutError){
 
-        req.log.warn(`El pool de cinexiones se ha agotado: ${err.stack}`);
+        req.log.warn(err, `El pool de cinexiones se ha agotado: ${err.message}`);
         res.status(503).json({ error: 'El servicio no está disponible temporalmente debido a la alta demanda. Inténtalo más tarde.' });
 
     }
@@ -24,14 +24,14 @@ const errorHandler = (err, req, res, next) => {
     
     else if (err) {
 
-        req.log.error(err.stack);
+        req.log.error(err, `Error inesperado en la aplicacion: ${err.message}`);
 
         // Definimos el error a mostrar
         const status = err.status || 500;
 
         res.status(status);
 
-        res.json({error: err.message});
+        res.json({error: 'Error inseperado en la aplicacion, favor ponerse en contacto con el soporte adecuado'});
 
     }
 

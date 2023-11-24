@@ -29,7 +29,7 @@ router.get('/refresh', refresh);
 
 // @desc Enpoint encargado de gestionar el cierre de sesión
 // @route POST /api/auth/logout
-// @access public 
+// @access only Users 
 router.post('/logout', [extractToken, verifyJWT], logout);
 
 
