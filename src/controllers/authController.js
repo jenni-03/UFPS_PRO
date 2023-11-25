@@ -5,6 +5,7 @@ import User from '../models/Usuario.js';
 import sendResetEmail from '../util/resetEmail.js';
 import PasswordReset from '../models/PasswordReset.js';
 import dayjs from 'dayjs';
+import logger from '../middlewares/logger.js';
 
 
 /* --------- Login function -------------- */
@@ -71,8 +72,8 @@ export const login = async (req, res, next) => {
         });
 
     }catch(error){
-        const errorLogin = new Error(`Ocurrio un problema al intentar iniciar sesión - ${err.message}`);
-        errorLogin.stack = err.stack; 
+        const errorLogin = new Error(`Ocurrio un problema al intentar iniciar sesión - ${error.message}`);
+        errorLogin.stack = error.stack; 
         next(errorLogin);
     }
 

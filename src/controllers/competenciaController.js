@@ -182,12 +182,14 @@ const updateCompetencia = async (req, res, next) => {
 const unlinkCategoria = async (req, res, next) => {
 
     // Obtenemos el identificador de la categoria
-    const { categoria_id } = req.body;
+    const { id } = req.params;
 
     try{
 
+        console.log(id)
+
         // Obtenemos la categoria a desasociar
-        const categoria = await Categoria.findByPk(categoria_id, {
+        const categoria = await Categoria.findByPk(id, {
             include: [ Competencia ]
         });
             

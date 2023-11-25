@@ -31,7 +31,7 @@ const errorHandler = (err, req, res, next) => {
 
         res.status(status);
 
-        res.json({error: 'Error inseperado en la aplicacion, favor ponerse en contacto con el soporte adecuado'});
+        res.json({error: err.message});
 
     }
 

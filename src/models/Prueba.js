@@ -1,4 +1,5 @@
 import { DataTypes } from 'sequelize';
+import ConfiguracionCategoria from './ConfiguracionCategoria.js';
 
 // Importamos el modelo de conexión
 import sequelize from '../database/db.js';
@@ -45,6 +46,21 @@ const Prueba = sequelize.define('Pruebas', {
         defaultValue: 500
     }
 }, {
+    hooks: {
+
+        beforeDestroy: async (prueba, options) => {
+            try{
+                await Promise.all([
+                    ConfiguracionCategoria.destroy({ where: { prueba_id: prueba.id } }),
+                ]);
+            }catch(err){
+                const errorDelete = new Error(`Error al intentar eliminar datos relacionados con la prueba con ID ${prueba.id}`);
+                errorDelete.stack = err.stack; 
+                throw errorDelete; 
+            }
+        }
+
+    },
     timestamps: true,
     createdAt: 'fecha_creacion',
     updatedAt: 'fecha_actualizacion',

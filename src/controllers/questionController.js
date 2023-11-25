@@ -175,6 +175,16 @@ const createQuestions = async (req, res, next) => {
         const sheet = workbookSheets[0];
         const dataExcel = XLSX.utils.sheet_to_json(workbook.Sheets[sheet]);
 
+        // Verificamos que no haya duplicados en los encabezados
+        let headers = Object.keys(dataExcel[0]);
+
+        let headersSet = new Set(headers);
+
+        if (headers.length !== headersSet.size) {
+            res.status(400);
+            throw new Error('No se permite el uso de encabezados duplicados');
+        }
+
         // Creamos los objetos preguntas
         const questions = dataExcel.map( async (itemFila) => {
 

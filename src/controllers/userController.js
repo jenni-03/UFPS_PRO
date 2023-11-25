@@ -25,7 +25,7 @@ const getProfile = async (req, res, next) => {
         return res.status(200).json(existUser);
 
     }catch(error){
-        const errorGetPerfil = new Error(`Ocurrio un problema al obtener el perfil del usuario - ${err.message}`);
+        const errorGetPerfil = new Error(`Ocurrio un problema al obtener el perfil del usuario - ${error.message}`);
         errorGetPerfil.stack = error.stack; 
         next(errorGetPerfil);
     }
@@ -55,7 +55,7 @@ const getStudents =  async (req, res, next) => {
         res.status(200).json(students);
 
     } catch (error) {
-        const errorGetEst = new Error(`Ocurrio un problema al intentar obtener los estudiantes - ${err.message}`);
+        const errorGetEst = new Error(`Ocurrio un problema al intentar obtener los estudiantes - ${error.message}`);
         errorGetEst.stack = error.stack; 
         next(errorGetEst);
     }
@@ -90,7 +90,7 @@ const getStudentById = async (req, res, next) => {
         res.status(200).json(student);
 
     } catch (error) {
-        const errorGetEstId = new Error(`Ocurrio un problema al intentar obtener la información del estudiante especificado - ${err.message}`);
+        const errorGetEstId = new Error(`Ocurrio un problema al intentar obtener la información del estudiante especificado - ${error.message}`);
         errorGetEstId.stack = error.stack; 
         next(errorGetEstId);
     }
@@ -128,7 +128,7 @@ const updateStudentData = async (req, res, next) => {
         res.status(200).json({ message: "Actualización realizada correctamente" });
 
     } catch (error) {
-        const errorUpdtEst = new Error(`Ocurrio un problema al actualizar el estudiante especificado - ${err.message}`);
+        const errorUpdtEst = new Error(`Ocurrio un problema al actualizar el estudiante especificado - ${error.message}`);
         errorUpdtEst.stack = error.stack; 
         next(errorUpdtEst);
     }
@@ -192,7 +192,7 @@ const updateStudentDataDir = async (req, res, next) => {
         return res.status(200).json({ message: 'Estudiante actualizado correctamente' });
 
     } catch (error) {
-        const errorUpdtEstDir = new Error(`Ocurrio un problema al intentar actualizar el estudiante - ${err.message}`);
+        const errorUpdtEstDir = new Error(`Ocurrio un problema al intentar actualizar el estudiante - ${error.message}`);
         errorUpdtEstDir.stack = error.stack; 
         next(errorUpdtEstDir);
     }
@@ -215,7 +215,7 @@ const getDirectors =  async (req, res, next) => {
         res.status(200).json(directors);
 
     } catch (error) {
-        const errorGetDir = new Error(`Ocurrio un problema al intentar obtener los datos de los directores - ${err.message}`);
+        const errorGetDir = new Error(`Ocurrio un problema al intentar obtener los datos de los directores - ${error.message}`);
         errorGetDir.stack = error.stack; 
         next(errorGetDir);
     }
@@ -248,7 +248,7 @@ const getDirectorById = async (req, res) => {
         res.status(200).json(director);
 
     } catch (error) {
-        const errorGetDirId = new Error(`Ocurrio un problema al intentar obtener los datos del director - ${err.message}`);
+        const errorGetDirId = new Error(`Ocurrio un problema al intentar obtener los datos del director - ${error.message}`);
         errorGetDirId.stack = error.stack; 
         next(errorGetDirId);
     }
@@ -305,7 +305,7 @@ const updateDirector = async (req, res, next) => {
         res.status(200).json({ message: "Datos actualizados correctamente" });
 
     } catch (error) {
-        const errorUpdtDir = new Error(`Ocurrio un problema al actualizar los datos del director - ${err.message}`);
+        const errorUpdtDir = new Error(`Ocurrio un problema al actualizar los datos del director - ${error.message}`);
         errorUpdtDir.stack = error.stack; 
         next(errorUpdtDir);
     }
@@ -354,7 +354,7 @@ const updatePhotoDirector = async (req, res, next) => {
         });
     
     } catch (error) {
-        const errorUpdtPhotoDir = new Error(`Ocurrio un problema al actualizar la foto del administrador - ${err.message}`);
+        const errorUpdtPhotoDir = new Error(`Ocurrio un problema al actualizar la foto del administrador - ${error.message}`);
         errorUpdtPhotoDir.stack = error.stack; 
         next(errorUpdtPhotoDir);
     }
@@ -396,7 +396,7 @@ const updatePassword = async (req, res, next) => {
         res.status(200).json({message:"Contraseña cambiada correctamente"});
 
     }catch(error){
-        const errorUpdtPassDir = new Error(`Ocurrio un problema al intentar cambiar la contrasenia - ${err.message}`);
+        const errorUpdtPassDir = new Error(`Ocurrio un problema al intentar cambiar la contrasenia - ${error.message}`);
         errorUpdtPassDir.stack = error.stack; 
         next(errorUpdtPassDir);
     }
@@ -429,7 +429,7 @@ const deleteStudent = async (req, res, next) => {
         res.status(200).json({message: "El usuario ha sido desvinculado de la plataforma correctamente"});
 
     }catch(error){
-        const errorDelUser = new Error(`Ocurrio un problema al intentar desvincular al estudiante - ${err.message}`);
+        const errorDelUser = new Error(`Ocurrio un problema al intentar desvincular al estudiante - ${error.message}`);
         errorDelUser.stack = error.stack; 
         next(errorDelUser);
     }

@@ -34,7 +34,7 @@ const Categoria = sequelize.define('Categorias', {
     },
     competencia_id: {
         type: DataTypes.INTEGER,
-        allowNull: false,
+        allowNull: true,
         references: {
             model: 'Competencias',
             key: 'id'
