@@ -5,7 +5,7 @@ import User from '../models/Usuario.js';
 import sendResetEmail from '../util/resetEmail.js';
 import PasswordReset from '../models/PasswordReset.js';
 import dayjs from 'dayjs';
-import logger from '../middlewares/logger.js';
+
 
 
 /* --------- Login function -------------- */

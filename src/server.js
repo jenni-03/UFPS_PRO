@@ -11,7 +11,7 @@ import pino_http from 'pino-http';
 import pino from 'pino';
 import helmet from 'helmet';
 import bodyParser from 'body-parser';
-import Rol from './models/Rol.js';
+
 
 // Importamos las tablas a crear
 import './database/associations.js';
@@ -121,7 +121,7 @@ const main = async () => {
     
         // Inicia el servidor una vez que las tablas se sincronicen
         const server = app.listen(PORT, () => {
-          logger.info({ status: 'Bienvenido, iniciando servidor....',  }, `App is running on http://localhost:${PORT}`);
+          logger.info({ status: 'Bienvenido, servidor actualmente en funcionamiento',  }, `App is running on http://localhost:${PORT}`);
         });
 
         // Configuramos los tiempos de espera del servidor
