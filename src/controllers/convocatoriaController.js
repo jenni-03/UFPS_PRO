@@ -33,6 +33,7 @@ const getConvocatorias = async (req, res, next) => {
             order: [['fecha_fin', 'DESC']],
             include: {
                 model: Prueba,
+                as: 'Prueba',
                 attributes: ['nombre']
             }
         });
@@ -46,7 +47,7 @@ const getConvocatorias = async (req, res, next) => {
                 fecha_inicio: moment(convocatoria.fecha_inicio).local().format('DD-MM-YYYY HH:mm'),
                 fecha_fin: moment(convocatoria.fecha_fin).local().format('DD-MM-YYYY HH:mm'),
                 estado: convocatoria.estado,
-                prueba: convocatoria.prueba
+                prueba: convocatoria.Prueba
             }
 
         });
