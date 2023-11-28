@@ -167,8 +167,7 @@ const createConvocatoria = async (req, res, next) => {
                 tipo: 'Estudiante'
             },
             attributes: ['id', 'codigo', 'email', 'fecha_inactivacion'],
-            paranoid: false,
-            raw: true
+            paranoid: false
         });
 
 
