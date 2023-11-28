@@ -44,8 +44,8 @@ const getConvocatorias = async (req, res, next) => {
             return {
                 id: convocatoria.id,
                 nombre: convocatoria.nombre,
-                fecha_inicio: moment(convocatoria.fecha_inicio).local().format('DD-MM-YYYY HH:mm'),
-                fecha_fin: moment(convocatoria.fecha_fin).local().format('DD-MM-YYYY HH:mm'),
+                fecha_inicio: moment(convocatoria.fecha_inicio).format('DD-MM-YYYY HH:mm'),
+                fecha_fin: moment(convocatoria.fecha_fin).format('DD-MM-YYYY HH:mm'),
                 estado: convocatoria.estado,
                 prueba: convocatoria.Prueba
             }
@@ -89,8 +89,8 @@ const getConvocatoriaById = async (req, res, next) => {
         res.status(200).json({
             nombre: convocatoria.nombre,
             descripcion: convocatoria.descripcion,
-            fecha_inicio: moment(convocatoria.fecha_inicio).utcOffset(-5).format('DD-MM-YYYY HH:mm'),
-            fecha_fin: moment(convocatoria.fecha_fin).utcOffset(-5).format('DD-MM-YYYY HH:mm'),
+            fecha_inicio: moment(convocatoria.fecha_inicio).format('DD-MM-YYYY HH:mm'),
+            fecha_fin: moment(convocatoria.fecha_fin).format('DD-MM-YYYY HH:mm'),
             estado: convocatoria.estado,
             prueba: {
                 id: convocatoria.Prueba.id,
@@ -141,6 +141,12 @@ const createConvocatoria = async (req, res, next) => {
         const workbookSheets = workbook.SheetNames;
         const sheet = workbookSheets[0];
         const dataExcel = XLSX.utils.sheet_to_json(workbook.Sheets[sheet]);
+
+
+        if (dataExcel.length === 0) {
+            res.status(400);
+            throw new Error('El archivo excel de estudiantes no puede estar vacio');
+        }
 
 
         // Verificamos que no haya duplicados en los encabezados
@@ -437,7 +443,7 @@ const getEstudiantesConvocatoria = async (req, res, next) => {
         });
 
         if(!convocatoria){
-            return res.status(400).json({ error: 'No se encuentra la convocatoria especificada' });
+            return res.status(200).json([]);
         }
 
         // Obtenemos las inscripciones asociadas 
@@ -534,7 +540,9 @@ const getPreguntasConvocatoria = async (req, res) => {
         return res.status(200).json(preguntas);
 
     }catch(error){
-        return res.status(500).json({error: `Error al obtener las preguntas asociadas a la prueba de la convocatoria: ${error.message}`});
+        const errorGetQuestConv = new Error(`Ocurrio un problema al obtener las preguntas asociadas a la prueba - ${error.message}`);
+        errorGetQuestConv .stack = error.stack; 
+        next(errorGetQuestConv);
     }
 
 }
@@ -677,16 +685,18 @@ const getConvocatoriasEstudiante = async (req, res, next) => {
     
         // Obtenemos los estudiantes a partir de sus inscripciones
         const convocatorias = inscripciones.map(inscripcion => {
+
+            console.log(Object.keys(inscripcion));
             
-            const { id, nombre, descripcion, fecha_inicio, fecha_fin, prueba } = inscripcion.convocatoria;
+            const { id, nombre, descripcion, fecha_inicio, fecha_fin, Prueba } = inscripcion.Convocatoria;
 
             return {
                 id,
                 nombre,
                 descripcion,
-                fecha_inicio: moment(fecha_inicio).local().format('DD-MM-YYYY HH:mm'),
-                fecha_fin: moment(fecha_fin).local().format('DD-MM-YYYY HH:mm'),
-                prueba
+                fecha_inicio: moment(fecha_inicio).format('DD-MM-YYYY HH:mm'),
+                fecha_fin: moment(fecha_fin).format('DD-MM-YYYY HH:mm'),
+                Prueba
             }
             
         });
