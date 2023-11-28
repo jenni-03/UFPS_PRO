@@ -443,14 +443,14 @@ const getEstudiantesConvocatoria = async (req, res, next) => {
         });
 
         if(!convocatoria){
-            return res.status(200).json([]);
+            return res.status(400).json({ error: 'No se encuentra la convocatoria especificada' });
         }
 
         // Obtenemos las inscripciones asociadas 
         const inscripciones = await convocatoria.getInscripciones();
 
         if(inscripciones.length === 0){
-            return res.status(400).json({ error: 'No se encontraron estudiantes registrados a esta convocatoria' });
+            return res.status(200).json([]);
         }
         
         // Obtenemos los estudiantes a partir de sus inscripciones
