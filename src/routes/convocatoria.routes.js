@@ -12,6 +12,7 @@ import fileupload from 'express-fileupload';
 import fileSizeLimiter from '../middlewares/fileSizeLimiter.js';
 import filePayloadExist from '../middlewares/filePayloadExist.js';
 import fileExcelLimiter from '../middlewares/fileExcelLimiter.js';
+import { validateStudentData } from '../schemas/userSchema.js';
 
 // Inicializamos el router
 const router = Router();
@@ -26,7 +27,7 @@ router.get('/', [extractToken, verifyJWT, isAdmin], convocatoriaController.getCo
 
 
 // @desc Endpoint encargado de la obtención de una convocatoria por su id
-// @route GET /api/convocatoria/:id
+// @route GET /api/convocatoria/get/:id
 // @access solo Admin
 router.get('/:id', [extractToken, verifyJWT, isAdmin, validateConvocatoriaData], convocatoriaController.getConvocatoriaById);
 
@@ -51,21 +52,53 @@ router.post('/create', [
 router.put('/update/:id', [ extractToken, verifyJWT, isAdmin, validateConvocatoriaData], convocatoriaController.updateConvocatoria);
 
 
+// @desc Endpoint encargado de la obtención de todos los estudiantes asociados a una convocatoria
+// @route GET /api/convocatoria/:id/getEstudiantes
+// @access solo Admin
+router.get('/:id/getEstudiantes', [ extractToken, verifyJWT, isAdmin ], convocatoriaController.getEstudiantesConvocatoria);
+
+
 // @desc Endpoint encargado de la presentación de la prueba asociada a la convocatoria
 // @route PUT /api/convocatoria/:id/presentarPrueba
 // @access public
 router.post('/:id/presentarPrueba', [ extractToken, verifyJWT ], convocatoriaController.presentarPrueba);
 
 
+// @desc Endpoint encargado de la obtención de todos las preguntas asociadas a la prueba de una convocatoria
+// @route GET /api/convocatoria/:id/getPreguntas
+// @access solo Admin
+router.get('/:id/getPreguntas', [ extractToken, verifyJWT, isAdmin ], convocatoriaController.getPreguntasConvocatoria);
+
+
+// @desc Endpoint encargado de la expulsión de un usuario asociado a una convocatoria especifica
+// @route DELETE /api/convocatoria/:conv_id/ejectStudent/:user_id
+// @access solo Admin
+router.delete('/:conv_id/ejectStudent/:user_id', [ extractToken, verifyJWT, isAdmin ], convocatoriaController.expulsarEstudianteConvocatoria);
+
+
 // @desc Endpoint encargado de la obtención de todos los estudiantes asociados a una convocatoria
-// @route PUT /api/convocatoria/:id/getEstudiantes
+// @route GET /api/convocatoria/:id/getEstudiantes
 // @access solo Admin
 router.get('/:id/getEstudiantes', [ extractToken, verifyJWT, isAdmin ], convocatoriaController.getEstudiantesConvocatoria);
 
 
-// @desc Endpoint encargado de la obtención de todos las preguntas asociadas a la prueba de una convocatoria
-// @route PUT /api/convocatoria/:id/getPreguntas
+// @desc Endpoint encargado de la creación de un nuevo estudiante ligado a una convocatoria
+// @route POST /api/convocatoria/:id/registroEstudiante
 // @access solo Admin
-router.get('/:id/getPreguntas', [ extractToken, verifyJWT, isAdmin ], convocatoriaController.getPreguntasConvocatoria);
+router.post('/:id/registroEstudiante', [ extractToken, verifyJWT, isAdmin, validateStudentData ], convocatoriaController.createStudent);
+
+
+// ########### Estudiante ################
+
+// @desc Endpoint encargado de la presentación de la prueba asociada a la convocatoria
+// @route POST /api/convocatoria/:id/presentarPrueba
+// @access Estudiantes
+router.post('/:id/presentarPrueba', [ extractToken, verifyJWT ], convocatoriaController.presentarPrueba);
+
+
+// @desc Endpoint encargado de la obtención de todas las convocatorias activas asociadas a un estudiante
+// @route GET /api/convocatoria/obtenerConvocatorias/estudiante
+// @access Estudiantes
+router.get('/obtenerConvocatorias/estudiante', [ extractToken, verifyJWT ], convocatoriaController.getConvocatoriasEstudiante);
 
 export default router;
