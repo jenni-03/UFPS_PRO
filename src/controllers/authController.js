@@ -42,7 +42,7 @@ export const login = async (req, res, next) => {
             username: email,
             nombre: userFound.nombre,
             tipo: userFound.tipo
-        }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
+        }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '3d' });
 
         // Creamos el token de refresco - inactivo mientras se decide si se implementa
         /*const refreshToken = jwt.sign(

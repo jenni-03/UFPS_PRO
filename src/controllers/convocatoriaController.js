@@ -537,7 +537,7 @@ const getPreguntasConvocatoria = async (req, res, next) => {
                 as: 'Configuraciones_categorias',
                 include: {
                     model: Pregunta,
-                    attributes: ['texto_pregunta', 'opciones'],
+                    attributes: ['texto_pregunta', 'opciones', 'imagen'],
                     as: 'Preguntas',
                     through: {
                         attributes: []
@@ -552,7 +552,7 @@ const getPreguntasConvocatoria = async (req, res, next) => {
         for (let configuracionCategoria of prueba.Configuraciones_categorias){
 
             configuracionCategoria.Preguntas.map(pregunta => {
-                preguntas.push({ texto: pregunta.texto_pregunta, opciones: JSON.parse(pregunta.opciones) });
+                preguntas.push({ texto: pregunta.texto_pregunta, opciones: JSON.parse(pregunta.opciones), imagen: pregunta.imagen });
             });
 
         }
