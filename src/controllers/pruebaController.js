@@ -24,7 +24,10 @@ const getAllTests = async (req, res, next) => {
             attributes: ['id', 'nombre', 'semestre', 'total_preguntas'],
             include: {
                 model: Competencia,
-                attributes: ['nombre']
+                attributes: ['nombre'],
+                through: {
+                    attributes: []
+                }
             }
         });
 
@@ -32,7 +35,7 @@ const getAllTests = async (req, res, next) => {
         res.status(200).json(pruebas)
 
     }catch(error){
-        const errorGetTest = new Error(`Ocurrio un problema al obtener las pruebas - ${err.message}`);
+        const errorGetTest = new Error(`Ocurrio un problema al obtener las pruebas - ${error.message}`);
         errorGetTest.stack = error.stack; 
         next(errorGetTest);
     }
@@ -72,7 +75,7 @@ const getTestId = async (req, res, next) => {
         res.status(200).json(prueba);
 
     }catch(error){
-        const errorGetTestId = new Error(`Ocurrio un problema al obtener la prueba especificada - ${err.message}`);
+        const errorGetTestId = new Error(`Ocurrio un problema al obtener la prueba especificada - ${error.message}`);
         errorGetTestId.stack = error.stack; 
         next(errorGetTestId);
     }
@@ -86,6 +89,9 @@ const createTest = async (req, res, next) => {
 
     // Obtenemos los datos de el estudiante a crear
     const { nombre, descripcion, semestre, duracion, total_preguntas, competencias, valorCategorias, categorias, preguntas } = req.body;
+
+    // Variable para almacenar la instancia de la prueba creada
+    let result;
 
     try{
 
@@ -101,7 +107,7 @@ const createTest = async (req, res, next) => {
         }
 
         // Incializamos la transacción
-        const result = await sequelize.transaction(async (t) => {
+        result = await sequelize.transaction(async (t) => {
 
             // Creamos la prueba
             const prueba = await Prueba.create({
@@ -113,22 +119,31 @@ const createTest = async (req, res, next) => {
             }, {transaction: t});
 
             // Asignamos las competencias
-            await asignCompetences(prueba.id, competencias, t);
+            await asignCompetences(prueba.id, competencias, t, res)
+            
 
             // Configuramos el valor de las categorias
-            await asignValueCategories(prueba.id, valorCategorias, competencias, t, prueba.semestre, prueba.total_preguntas);
-
-            // Asignamos las preguntas
-            await asignQuestions(categorias, preguntas, prueba.id, prueba.semestre, t);
+            await asignValueCategories(prueba.id, valorCategorias, competencias, t, prueba.semestre, prueba.total_preguntas, res);
 
             return prueba;
 
         });
 
+        // Asignamos las preguntas
+        await asignQuestions(result.id, result.semestre)
+        
         res.status(200).json({ message: `La Prueba: '${result.nombre}' fue creada exitosamente` });
 
     }catch(error){
-        next(new Error(`Ocurrio un problema al crear la prueba: ${error.message}`));
+
+        // Eliminamos la prueba en caso de que se haya creado en medio del error
+        if (result){
+            await Prueba.destroy({ where: { id: result.id } });
+        }
+
+        const errorCreateTest = new Error(`Ocurrio un problema al crear la prueba - ${error.message}`);
+        errorCreateTest.stack = error.stack; 
+        next(errorCreateTest);
     }
 
 };
@@ -150,7 +165,7 @@ const updateTest = async (req, res, next) => {
         const prueba = await Prueba.findByPk(id);
 
         if(!prueba){
-            return res.status(400).json({error: 'No se encuentra ningun estudiante asociado con el id especificado'});
+            return res.status(400).json({error: 'No se encuentra ninguna prueba asociada con el id especificado'});
         }
 
         // Validamos que el nombre ingresado sea unico
@@ -172,7 +187,7 @@ const updateTest = async (req, res, next) => {
         // no supere el maximo posible
         for (const valores of valoresCategorias){
                 
-            valor_total_categorias += validate_percentage_categories(valores);
+            valor_total_categorias += validate_percentage_categories(valores, res);
             
         }
 
@@ -221,7 +236,9 @@ const updateTest = async (req, res, next) => {
         return res.status(200).json({ message: 'Prueba actualizada correctamente' });
 
     }catch(error){
-        next(new Error(`Ocurrio un problema al actualizar la prueba: ${error.message}`));
+        const errorUpdateTest = new Error(`Ocurrio un problema al actualizar la prueba - ${error.message}`);
+        errorUpdateTest.stack = error.stack; 
+        next(errorUpdateTest);
     }
 
 };

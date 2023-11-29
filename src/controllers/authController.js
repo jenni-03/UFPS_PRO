@@ -7,6 +7,7 @@ import PasswordReset from '../models/PasswordReset.js';
 import dayjs from 'dayjs';
 
 
+
 /* --------- Login function -------------- */
 
 export const login = async (req, res, next) => {
@@ -41,7 +42,7 @@ export const login = async (req, res, next) => {
             username: email,
             nombre: userFound.nombre,
             tipo: userFound.tipo
-        }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
+        }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '3d' });
 
         // Creamos el token de refresco - inactivo mientras se decide si se implementa
         /*const refreshToken = jwt.sign(
@@ -71,8 +72,8 @@ export const login = async (req, res, next) => {
         });
 
     }catch(error){
-        const errorLogin = new Error(`Ocurrio un problema al intentar iniciar sesión - ${err.message}`);
-        errorLogin.stack = err.stack; 
+        const errorLogin = new Error(`Ocurrio un problema al intentar iniciar sesión - ${error.message}`);
+        errorLogin.stack = error.stack; 
         next(errorLogin);
     }
 

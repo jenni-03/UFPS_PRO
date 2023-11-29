@@ -9,9 +9,14 @@ import sequelize from '../database/db.js';
 import XLSX from "xlsx";
 import { Op } from 'sequelize';
 import { validarFechaCoherente } from '../util/validarFechaCoherente.js';
-import dayjs from 'dayjs';
+import { tieneDuplicados } from '../util/duplicatedStudents.js';
 import moment from 'moment';
+import Respuesta from '../models/Respuesta.js';
+import ConfiguracionCategoria from '../models/ConfiguracionCategoria.js';
+import Pregunta from '../models/Pregunta.js';
 
+
+// ########## ADMIN ####################### 
 
 /* --------- getConvocatorias function -------------- */
 
@@ -31,6 +36,7 @@ const getConvocatorias = async (req, res, next) => {
             order: [['fecha_fin', 'DESC']],
             include: {
                 model: Prueba,
+                as: 'Prueba',
                 attributes: ['nombre']
             }
         });
@@ -41,10 +47,10 @@ const getConvocatorias = async (req, res, next) => {
             return {
                 id: convocatoria.id,
                 nombre: convocatoria.nombre,
-                fecha_inicio: moment(convocatoria.fecha_inicio).local().format('DD-MM-YYYY HH:mm'),
-                fecha_fin: moment(convocatoria.fecha_fin).local().format('DD-MM-YYYY HH:mm'),
+                fecha_inicio: moment(convocatoria.fecha_inicio).format('DD-MM-YYYY HH:mm'),
+                fecha_fin: moment(convocatoria.fecha_fin).format('DD-MM-YYYY HH:mm'),
                 estado: convocatoria.estado,
-                prueba: convocatoria.prueba
+                prueba: convocatoria.Prueba
             }
 
         });
@@ -53,7 +59,9 @@ const getConvocatorias = async (req, res, next) => {
         res.status(200).json(formatedConvocatorias);
 
     } catch (error) {
-        next(new Error(`Ocurrio un problema al obtener las convocatorias: ${error.message}`));
+        const errorGetConv = new Error(`Ocurrio un problema al intentar obtener las convocatorias - ${error.message}`);
+        errorGetConv.stack = error.stack; 
+        next(errorGetConv);
     }
 
 };
@@ -76,21 +84,27 @@ const getConvocatoriaById = async (req, res, next) => {
             }
         });
 
+        if (!convocatoria) {
+            return res.status(400).json({error: 'No se encuentra ninguna convocatoria con el id especificado'});
+        }
+
         // Respondemos al usuario
         res.status(200).json({
             nombre: convocatoria.nombre,
             descripcion: convocatoria.descripcion,
-            fecha_inicio: moment(convocatoria.fecha_inicio, 'DD-MM-YYYY HH:mm').local(),
-            fecha_fin: moment(convocatoria.fecha_fin, 'DD-MM-YYYY HH:mm').local(),
+            fecha_inicio: moment(convocatoria.fecha_inicio).format('DD-MM-YYYY HH:mm'),
+            fecha_fin: moment(convocatoria.fecha_fin).format('DD-MM-YYYY HH:mm'),
             estado: convocatoria.estado,
             prueba: {
-                id: convocatoria.prueba.id,
-                nombre: convocatoria.prueba.nombre
+                id: convocatoria.Prueba.id,
+                nombre: convocatoria.Prueba.nombre
             }
         });
 
     } catch (error) {
-        next(new Error(`Ocurrio un problema al intentar añadir el estudiante: ${error.message}`));
+        const errorGetConvId = new Error(`Ocurrio un problema al intentar obtener la convocatoria especificada - ${error.message}`);
+        errorGetConvId.stack = error.stack; 
+        next(errorGetConvId);
     }
 
 };
@@ -101,7 +115,7 @@ const getConvocatoriaById = async (req, res, next) => {
 const createConvocatoria = async (req, res, next) => {
 
     // Obtenemos los datos de la convocatoria
-    const { nombre, descripcion, fecha_inicio, fecha_fin, prueba_id } = req.body;
+    const { convocatoria_nombre, convocatoria_descripcion, fecha_inicio, fecha_fin, prueba_id } = req.body;
 
     try {
 
@@ -109,7 +123,7 @@ const createConvocatoria = async (req, res, next) => {
         const excelFileBuffer = req.files.archivo.data;
 
         // Validamos que la fechas sean coherentes
-        const error_fecha = validarFechaCoherente(new Date(fecha_inicio), new Date(fecha_fin));
+        const error_fecha = validarFechaCoherente(moment(fecha_inicio).tz('America/Bogota'), moment(fecha_fin).tz('America/Bogota'));
 
         if (error_fecha !== null) {
             return res.status(400).json({ error: error_fecha });
@@ -132,12 +146,37 @@ const createConvocatoria = async (req, res, next) => {
         const dataExcel = XLSX.utils.sheet_to_json(workbook.Sheets[sheet]);
 
 
+        if (dataExcel.length === 0) {
+            res.status(400);
+            throw new Error('El archivo excel de estudiantes no puede estar vacio');
+        }
+
+
+        // Verificamos que no haya duplicados en los encabezados
+        let headers = Object.keys(dataExcel[0]);
+
+        let headersSet = new Set(headers);
+
+        if (headers.length !== headersSet.size) {
+            res.status(400);
+            throw new Error('No se permite el uso de encabezados duplicados');
+        }
+
+
+        // Verificamos que no haya duplicados en el conjunto de estudiantes cargados
+        if (tieneDuplicados(dataExcel)){
+            res.status(400);
+            throw new Error('No se permiten estudiantes con codigos o correos repetidos');
+        }
+
+       
         // Obtenemos todos los estudiantes existentes
         const existingStudents = await Usuario.findAll({
             where: {
                 tipo: 'Estudiante'
             },
-            attributes: ['codigo', 'email']
+            attributes: ['id', 'codigo', 'email', 'fecha_inactivacion'],
+            paranoid: false
         });
 
 
@@ -146,17 +185,19 @@ const createConvocatoria = async (req, res, next) => {
 
             // Creamos la convocatoria
             const convocatoria = await Convocatoria.create({
-                nombre,
-                descripcion,
-                fecha_inicio: new Date(dayjs(fecha_inicio).format('YYYY-MM-DD HH:mm')),
-                fecha_fin: new Date(dayjs(fecha_fin).format('YYYY-MM-DD HH:mm')),
+                nombre: convocatoria_nombre,
+                descripcion: convocatoria_descripcion,
+                fecha_inicio: new Date(moment(fecha_inicio).tz('America/Bogota')),
+                fecha_fin: new Date(moment(fecha_fin).tz('America/Bogota')),
                 prueba_id
             }, {transaction: t});
 
 
+            // Arreglo que contiene los datos de los estudiantes tanto estudiantes como nuevos y sus inscripciones
             const newInscripcionesData = [];
             const existInscripcionesData = [];
             const newStudents = [];
+            const existStudents = [];
 
 
             // Registramos los datos de los usuarios
@@ -211,33 +252,37 @@ const createConvocatoria = async (req, res, next) => {
                 const apellido = itemFila['Apellido'];
 
 
-                // Verificamos si el estudiante ya existe
-                const exists = existingStudents.some(student => 
+                // Verificamos si el estudiante ya existe tanto en los usuarios actuales como eliminados
+                const existingStudent = existingStudents.find(student => 
                     student.codigo === codigo || student.email === email
                 );
 
+
                 // En caso de existir solo notificamos al usuario y creamos su inscripcion
-                if (exists) {
+                if (existingStudent) {
 
-                    // Obtenemos el usuario ya registrado
-                    const userExist = await Usuario.findOne({
+                    if (existingStudent.fecha_inactivacion !== null) await existingStudent.restore();
+
+                    // Verificamos que el usuario ya registrado no contenga una inscripción a la prueba
+                    const inscripcionExist = await Inscripcion.findOne({
                         where: {
-                            [Op.or]: {
-                                codigo,
-                                email
-                            }
+                            usuario_id: existingStudent.id,
+                            convocatoria_id: convocatoria.id
                         }
-                    });
+                    })
 
-                    // Agregamos la inscripción a nuestro array de inscripciones
-                    existInscripcionesData.push({
-                        fecha_inscripcion: new Date(dayjs().format('YYYY-MM-DD HH:mm')),
-                        usuario_id: userExist.id,
-                        convocatoria_id: convocatoria.id
-                    });
+                    if (!inscripcionExist){
 
-                    // Enviamos correo de notificacion
-                    await generateCorreo(`${nombre} ${apellido}`, email, '', 'Notificar', convocatoria.nombre);
+                        // Agregamos la inscripción a nuestro array de inscripciones
+                        existInscripcionesData.push({
+                            fecha_inscripcion: new Date(moment().tz('America/Bogota')),
+                            usuario_id: existingStudent.id,
+                            convocatoria_id: convocatoria.id
+                        });
+
+                        existStudents.push(existingStudent);
+
+                    }
 
                 } else{
 
@@ -258,7 +303,6 @@ const createConvocatoria = async (req, res, next) => {
                         codigo,
                         email,
                         password: hashedPassword,
-                        noHashPassword: newPassword,
                         tipo: 'Estudiante',
                         semestre,
                         rol_id: 2
@@ -267,7 +311,7 @@ const createConvocatoria = async (req, res, next) => {
 
                     // Agregamos la inscripción a nuestro array de inscripciones
                     newInscripcionesData.push({
-                        fecha_inscripcion: new Date(dayjs().format('YYYY-MM-DD HH:mm')),
+                        fecha_inscripcion: new Date(moment().tz('America/Bogota')),
                         usuario_id: null,
                         convocatoria_id: convocatoria.id
                     });
@@ -278,18 +322,8 @@ const createConvocatoria = async (req, res, next) => {
             }
 
 
-            // Ahora obtenemos los datos a ingresar de los nuevos estudiantes
-            const secured_students = newStudents.map( (student) => {
-
-                const { noHashPassword, ...rest } = student;
-                    
-                return rest;
-
-            });
-
-
             // Registramos a los estudiantes nuevos
-            const created_students = await Usuario.bulkCreate(secured_students, { returning: true, transaction: t });
+            const created_students = await Usuario.bulkCreate(newStudents, { returning: true, transaction: t });
 
 
             // Actualizamos el valor de las inscripciones a cada uno de los usuarios registrados
@@ -297,119 +331,31 @@ const createConvocatoria = async (req, res, next) => {
                 newInscripcionesData[i].usuario_id = created_students[i].id;
             }
 
+
             // Creamos las inscripciones
-            const inscripciones = await Promise.all([
+            await Promise.all([
                 Inscripcion.bulkCreate(existInscripcionesData, { transaction: t }),
                 Inscripcion.bulkCreate(newInscripcionesData, { transaction: t })
             ]);
 
 
-            // Enviamos correo de registro para cada uno de los usuarios registrados
-            for (let i = 0; i < created_students.length; i++) {
+            const estudiantes_correos = newStudents.concat(existStudents).map(estudiante => {
+                return estudiante.email;
+            });
 
-                const student = created_students[i];
+            // Enviamos correo de confirmación de registro
+            await generateCorreo(estudiantes_correos, convocatoria.nombre, convocatoria.descripcion, convocatoria.fecha_inicio, convocatoria.fecha_fin);
 
-                // Enviamos correo de confirmación de registro
-                await generateCorreo(`${student.nombre} ${student.apellido}`, student.email, newStudents[i].noHashPassword, 'Registro', convocatoria.nombre);
-                
-            }
-
-            return inscripciones;
+            return existInscripcionesData.length + newInscripcionesData.length;
 
         });
 
         res.status(200).json({ message: `Se han inscrito ${result.length} estudiantes satisfactoriamente para la convocatoria` });
 
     } catch (err) {
-        next(new Error(`Ocurrio un problema al intentar crear la convocatoria: ${err.message}`));
-    }
-
-};
-
-
-/** -------- presentarPrueba function ----------------- */
-
-const presentarPrueba = async (req, res) => {
-
-    try {
-
-        // Obtenemos el usuario 
-
-        const username = req.user.username;
-
-        const user = await Usuario.findOne({
-            where: {
-                email: username
-            }
-        });
-
-
-        // Obtenemos los datos de la convocatoria
-
-        const { id } = req.params;
-
-        const convocatoria = await Convocatoria.findOne({
-            where: {
-                id,
-                estado: 1
-            },
-            include: {
-                model: Prueba
-            }
-        });
-
-        if (!convocatoria) {
-            return res.status(400).json({ error: 'No se encontro la convocatoria especificada o no esta disponible en este momento' });
-        }
-
-
-        // Verificamos la disponibilidad de la convocatoria
-
-        const fecha_actual = new Date().getTime();
-        const inicio_convocatoria = new Date(convocatoria.fecha_inicio).getTime();
-        const fin_convocatoria = new Date(convocatoria.fecha_fin).getTime();
-
-        if (inicio_convocatoria < fecha_actual) {
-            return res.status(400).json({ error: 'La convocatoria no está disponible en este momento' });
-        }
-
-        if (fin_convocatoria > fecha_actual) {
-            return res.status(400).json({ error: 'La convocatoria ha finalizado, favor contactar con el director en caso de un error' });
-        }
-
-
-        // Validamos la legitimidad de la inscripción del estudiante
-
-        const inscripcion = await Inscripcion.findOne({
-            where: {
-                usuario_id: user.id,
-                convocatoria_id: convocatoria.id
-            }
-        });
-
-        if (!inscripcion) {
-            return res.status(400).json({ error: 'No posees una inscripción registrada para esta convocatoria' });
-        }
-
-
-        // Verificamos que el usuario no haya terminado la pruena
-
-        if (inscripcion.fecha_finalizacion_prueba) {
-            return res.status(400).json({ error: 'El número de intentos permitidos para esta prueba es solamente uno' });
-        }
-
-
-        // Creamos los valores predeterminados del inicio de la prueba si este aun no la iniciado
-        if (!inscripcion.fecha_inicio_prueba) {
-
-            res.status(200).json(convocatoria);
-
-        }
-
-        res.status(200).json({ message: `Bienvenido` });
-
-    } catch (error) {
-        res.status(500).json({ error: `Error al presentar la prueba: ${error.message}` });
+        const errorCreateConv = new Error(`Ocurrio un problema al intentar crear la convocatoria - ${err.message}`);
+        errorCreateConv.stack = err.stack; 
+        next(errorCreateConv);
     }
 
 };
@@ -417,7 +363,7 @@ const presentarPrueba = async (req, res) => {
 
 /* --------- updateConvocatoria function -------------- */
 
-const updateConvocatoria = async (req, res) => {
+const updateConvocatoria = async (req, res, next) => {
 
     //Obtenemos el id
     const { id } = req.params;
@@ -427,30 +373,30 @@ const updateConvocatoria = async (req, res) => {
 
     try {
 
-        // Obtenemos la convocatoria
-        const convocatoria = await Convocatoria.findByPk(id);
-
+        // Obtenemos la convocatoria y la prueba
+        const [ convocatoria, existPrueba ] = await Promise.all([
+            Convocatoria.findByPk(id),
+            Prueba.findByPk(prueba_id)
+        ])
+        
         //Verificamos que exista la convocatoria
         if (!convocatoria) {
             return res.status(400).json({ error: 'No se encuentra ninguna convocatoria con el id especificado' });
         }
 
-
         // Validamos que exista la prueba enlazada a la convocatoria
-        const existPrueba = await Prueba.findByPk(prueba_id);
-
         if (!existPrueba) {
             return res.status(400).json({ error: 'No existe ninguna prueba con el id especificado' })
         }
 
 
         // Validamos que la fechas sean coherentes
-        const inicioValido = moment(fecha_inicio, 'YYYY-MM-DD HH:mm', true).isValid();
-        const finValido = moment(fecha_fin, 'YYYY-MM-DD HH:mm', true).isValid();
+        const inicioValido = moment(fecha_inicio, true).tz('America/Bogota').isValid();
+        const finValido = moment(fecha_fin, true).tz('America/Bogota').isValid();
 
         if (!inicioValido || !finValido) return res.status(400).json({ error: 'Las fechas proporcionadas no poseen un formato valido' });
 
-        const error_fecha = validarFechaCoherente(new Date(fecha_inicio), new Date(fecha_fin));
+        const error_fecha = validarFechaCoherente(moment(fecha_inicio).tz('America/Bogota'), moment(fecha_fin).tz('America/Bogota'));
 
         if (error_fecha) {
             return res.status(400).json({ error: error_fecha });
@@ -467,10 +413,12 @@ const updateConvocatoria = async (req, res) => {
             prueba_id
         })
 
-        res.status(200).json('Convocatoria actualizada correctamente');
+        res.status(200).json({ message:'Convocatoria actualizada correctamente'});
 
     } catch (err) {
-        return res.status(500).json({ error: `Error al actualizar la convocatoria: ${err.message}` });
+        const errorUpdateConv = new Error(`Ocurrio un problema al intentar actualizar la convocatoria - ${err.message}`);
+        errorUpdateConv.stack = err.stack; 
+        next(errorUpdateConv);
     }
 
 }
@@ -478,22 +426,24 @@ const updateConvocatoria = async (req, res) => {
 
 /* --------- getEstudiantesConvocatoria function -------------- */
 
-const getEstudiantesConvocatoria = async (req, res) => {
+const getEstudiantesConvocatoria = async (req, res, next) => {
+
+    // Obtenemos el id de la convocatoria
+    const {id} = req.params;
 
     try{
 
-        // Obtenemos el id de la convocatoria
-        const {id} = req.params;
-
-        // Verificamos el id de entrada
-        const regexId = /^[0-9]+$/; // Expresión regular que controla solo la admición de numeros
-
-        if (!regexId.test(id)) {
-            return res.status(400).json({ error: 'id no valido' });
-        }
-
         // Consultamos la convocatoria y verificamos su existencia
-        const convocatoria = await Convocatoria.findByPk(id);
+        const convocatoria = await Convocatoria.findByPk(id, {
+            include: [{
+                model: Inscripcion,
+                as: 'Inscripciones',
+                include: [{
+                    model: Usuario,
+                    as: 'Usuario'
+                }]
+            }]
+        });
 
         if(!convocatoria){
             return res.status(400).json({ error: 'No se encuentra la convocatoria especificada' });
@@ -502,20 +452,58 @@ const getEstudiantesConvocatoria = async (req, res) => {
         // Obtenemos las inscripciones asociadas 
         const inscripciones = await convocatoria.getInscripciones();
 
-        if(!inscripciones){
-            return res.status(400).json({ error: 'No se encontraron estudiantes registrados a esta convocatoria' });
+        if(inscripciones.length === 0){
+            return res.status(200).json([]);
         }
         
         // Obtenemos los estudiantes a partir de sus inscripciones
-        const estudiantesPromise = inscripciones.map(async (inscripcion) => await inscripcion.getUsuario());
+        const estudiantes = convocatoria.Inscripciones.map(inscripcion => {
 
-        const estudiantes = await Promise.all(estudiantesPromise);
+            const usuario = inscripcion.Usuario;
+            return {
+                id: usuario.id,
+                nombre: usuario.nombre,
+                apellido: usuario.apellido,
+                correo: usuario.email,
+                codigo: usuario.codigo
+            };
+
+        });
 
         return res.status(200).json(estudiantes);
 
     }catch(error){
-        console.log(error)
-        return res.status(500).json({error: `Error al obtener los estudiantes de la convocatoria: ${error.message}`});
+        const errorGetEstConv = new Error(`Ocurrio un problema al obtener los estudiantes de la convocatoria - ${error.message}`);
+        errorGetEstConv.stack = error.stack; 
+        next(errorGetEstConv);
+    }
+
+}
+
+
+/* --------- expulsarEstudianteConvocatoria function -------------- */
+
+const expulsarEstudianteConvocatoria = async (req, res, next) => {
+
+    // Obtenemos el id del usuario y el de la convocatoria
+    const { user_id, conv_id } = req.params;
+
+    try{
+
+        // Eliminamos la inscripcion de la convocatoria asociada a ese estudiante
+        await Inscripcion.destroy({
+            where: {
+                usuario_id: user_id,
+                convocatoria_id: conv_id
+            }
+        });
+
+        return res.status(200).json({ message: 'Se ha expulsado al estudiante de la convocatoria correctamente' });
+
+    }catch(error){
+        const deleteEstConv = new Error(`Ocurrio un problema al desvincular al estudiante de la convocatoria - ${error.message}`);
+        deleteEstConv.stack = error.stack; 
+        next(deleteEstConv);
     }
 
 }
@@ -523,42 +511,362 @@ const getEstudiantesConvocatoria = async (req, res) => {
 
 /* --------- getPreguntasConvocatoria function -------------- */
 
-const getPreguntasConvocatoria = async (req, res) => {
+const getPreguntasConvocatoria = async (req, res, next) => {
+
+    // Obtenemos el id de la convocatoria
+    const {id} = req.params;
 
     try{
 
-        // Obtenemos el id de la convocatoria
-        const {id} = req.params;
-
-        // Verificamos el id de entrada
-        const regexId = /^[0-9]+$/; // Expresión regular que controla solo la admición de numeros
-
-        if (!regexId.test(id)) {
-            return res.status(400).json({ error: 'id no valido' });
-        }
-
         // Consultamos la convocatoria y verificamos su existencia
-        const convocatoria = await Convocatoria.findByPk(id);
+        const convocatoria = await Convocatoria.findByPk(id, {
+            include: {
+                model: Prueba
+            }
+        });
 
         if(!convocatoria){
             return res.status(400).json({ error: 'No se encuentra la convocatoria especificada' });
         }
 
         // Obtenemos la prueba asociada a la convocatoria
-        const prueba = await convocatoria.getPrueba();
+        const prueba = await Prueba.findByPk(convocatoria.prueba_id, {
 
-        // Obtenemos las preguntas a partir de la prueba
-        const preguntas = await Prueba.findAll({
-            
+            include: {
+                model: ConfiguracionCategoria,
+                as: 'Configuraciones_categorias',
+                include: {
+                    model: Pregunta,
+                    attributes: ['id', 'texto_pregunta', 'opciones', 'imagen'],
+                    as: 'Preguntas',
+                    through: {
+                        attributes: []
+                    }
+                }
+            }
+
         });
+
+        let preguntas = [];
+
+        for (let configuracionCategoria of prueba.Configuraciones_categorias){
+
+            configuracionCategoria.Preguntas.map(pregunta => {
+                preguntas.push({ texto: pregunta.texto_pregunta, opciones: JSON.parse(pregunta.opciones), imagen: pregunta.imagen });
+            });
+
+        }
 
         return res.status(200).json(preguntas);
 
     }catch(error){
-        return res.status(500).json({error: `Error al obtener las preguntas asociadas a la prueba de la convocatoria: ${error.message}`});
+        const errorGetQuestConv = new Error(`Ocurrio un problema al obtener las preguntas asociadas a la prueba - ${error.message}`);
+        errorGetQuestConv .stack = error.stack; 
+        next(errorGetQuestConv);
     }
 
 }
+
+
+/* --------- createStudent function -------------- */
+
+const createStudent =  async (req, res, next) => {
+
+    // Obtenemos el id de la convocatoria
+    const { id } = req.params;
+
+    // Obtenemos los datos de el estudiante a crear
+    const { nombre, apellido, codigo, email, semestre } = req.body; 
+
+    try {
+
+        // Validamos que el código y email sea único
+        const [ studentExist, convocatoria ] = await Promise.all([
+
+            Usuario.findOne({
+                where: {
+                    [Op.or]: [
+                        {codigo},
+                        {email}
+                    ]
+                },
+                paranoid: false
+            }),
+            Convocatoria.findByPk(id)
+
+        ])
+
+        // Si el estudiante existe, se verifica la inscripción a la convocatoria
+        if(studentExist){
+
+            if (studentExist.fecha_inactivacion !== null) await studentExist.restore();
+
+            // Determinamos si el estudiante ya esta inscrito a la convocatoria
+            const inscripcion = await Inscripcion.findOne({
+                where: {
+                    usuario_id: studentExist.id,
+                    convocatoria_id: id
+                }
+            });
+
+            if (inscripcion){
+
+                if (!inscripcion.estado) return res.status(400).json({error: 'La inscripción del usuario se encuentra vencida'});
+
+                return res.status(400).json({error: 'El usuario ya se encuentra registrado en la convocatoria'});
+
+            }
+
+            // Registramos su inscripcion a la convocatoria
+            await Inscripcion.create({
+                fecha_inscripcion: new Date(moment().tz('America/Bogota')),
+                usuario_id: studentExist.id,
+                convocatoria_id: convocatoria.id
+            });
+
+
+        }else{
+
+            // Generamos la contraseña
+            const password = password_generator.generate({
+                length: 15,
+                numbers: true,
+                symbols: true
+            });
+
+            // Ciframos la contraseña
+            const hashedPassword = await encryptPasswd(password);
+
+            // Creamos el usuario
+            const new_student = await Usuario.create({
+                nombre,
+                apellido,
+                codigo,
+                email,
+                password: hashedPassword,
+                tipo: 'Estudiante',
+                semestre,
+                rol_id: 2
+            });
+
+            // Registramos su inscripcion a la convocatoria
+            await Inscripcion.create({
+                fecha_inscripcion: new Date(moment().tz('America/Bogota')),
+                usuario_id: new_student.id,
+                convocatoria_id: convocatoria.id
+            });
+
+        }
+
+        // Enviamos correo de confirmación de registro
+        await generateCorreo([email], convocatoria.nombre, convocatoria.descripcion, convocatoria.fecha_inicio, convocatoria.fecha_fin);
+
+        // Respondemos al usuario
+        res.status(200).json({ message: `Usuario vinculado exitosamente a la convocatoria ${convocatoria.nombre}` });
+
+    } catch (error) {
+        const createEstConv = new Error(`Ocurrio un problema al vincular al estudiante a la convocatoria - ${error.message}`);
+        createEstConv.stack = error.stack; 
+        next(createEstConv);
+    }
+
+};
+
+
+// ########## Estudiante #######################
+
+
+const getConvocatoriasEstudiante = async (req, res, next) => {
+
+    // Obtenemos el id del usuario
+    const { id } = req.user;
+
+    // Estado
+    const state = req.query.estado || true;
+
+    try{
+
+        // Consultamos las inscripciones actuales del estudiante
+        const inscripciones = await Inscripcion.findAll({
+            where: {
+                usuario_id: id,
+                estado: state
+            },
+            include: {
+                model: Convocatoria,
+                attributes: ['id', 'nombre', 'descripcion', 'fecha_inicio', 'fecha_fin'],
+                include: {
+                    model: Prueba,
+                    attributes: ['id', 'nombre', 'duracion', 'descripcion', 'semestre', 'total_preguntas']
+                }
+            }
+        });
+
+    
+        // Obtenemos los estudiantes a partir de sus inscripciones
+        const convocatorias = inscripciones.map(inscripcion => {
+
+            console.log(Object.keys(inscripcion));
+            
+            const { id, nombre, descripcion, fecha_inicio, fecha_fin, Prueba } = inscripcion.Convocatoria;
+
+            return {
+                id,
+                nombre,
+                descripcion,
+                fecha_inicio: moment(fecha_inicio).format('DD-MM-YYYY HH:mm'),
+                fecha_fin: moment(fecha_fin).format('DD-MM-YYYY HH:mm'),
+                Prueba
+            }
+            
+        });
+
+        return res.status(200).json(convocatorias);
+
+    }catch(error){
+        const getConvEst = new Error(`Ocurrio un problema al obtener las convocatorias del estudiante - ${error.message}`);
+        getConvEst.stack = error.stack; 
+        next(getConvEst);
+    }
+
+}
+
+
+/** -------- terminarPrueba function ----------------- */
+
+const terminarPrueba = async (req, res, next) => {
+
+    try{
+
+        // Obtenemos el identificador del usuario y la convocatoria
+        const userId = req.user.id;
+        const { id } = req.params;
+
+
+        // Obtenemos la inscripción del estudiante a la prueba
+        const inscripcion = await Inscripcion.findOne({
+            where: {
+                usuario_id: userId,
+                convocatoria_id: id
+            }
+        });
+
+
+        // Actualizamos la fecha de terminación de la prueba
+        await inscripcion.update({
+            where: {
+                fecha_finalizacion_prueba: moment().tz('America/Bogota')
+            }
+        });
+
+        res.status(200).json({ message: 'Prueba finalizada correctamente' });
+
+    }catch(error){
+        const endTest = new Error(`Ocurrio un problema al finalizar la prueba - ${error.message}`);
+        endTest.stack = error.stack; 
+        next(endTest);
+    }
+
+};
+
+
+/** -------- presentarPrueba function ----------------- */
+
+const presentarPrueba = async (req, res, next) => {
+
+    try {
+
+        // Obtenemos el identificador del usuario y la convocatoria
+        const userId = req.user.id;
+        const { id } = req.params;
+
+        // Obtenemos el usuario y la convocatoria respectivamente
+        const [user, convocatoria] = await Promise.all([
+
+            Usuario.findByPk(userId),
+            Convocatoria.findOne({
+                where: {
+                    id,
+                    estado: 1
+                },
+                include: {
+                    model: Prueba
+                }
+            })
+
+        ]);
+
+        if (!convocatoria) {
+            return res.status(400).json({ error: 'No se encontro la convocatoria especificada o no esta disponible en este momento' });
+        }
+
+
+        // Validamos la legitimidad de la inscripción del estudiante
+        const inscripcion = await Inscripcion.findOne({
+            where: {
+                usuario_id: user.id,
+                convocatoria_id: convocatoria.id
+            }
+        });
+
+        if (!inscripcion) {
+            return res.status(400).json({ error: 'No posees una inscripción registrada para esta convocatoria' });
+        }
+
+
+        // Verificamos la disponibilidad de la convocatoria
+        const fecha_actual = moment().tz('America/Bogota');
+        const inicio_convocatoria = moment(convocatoria.fecha_inicio);
+        const fin_convocatoria = moment(convocatoria.fecha_fin);
+
+        if (fecha_actual.isBefore(inicio_convocatoria)) {
+            return res.status(400).json({ error: 'El inicio de la convocatoria no esta programado para este momento' });
+        }
+
+        if (fecha_actual.isSameOrAfter(fin_convocatoria)) {
+            return res.status(400).json({ error: 'La convocatoria ha finalizado, favor contactar con el director en caso de un error' });
+        }
+
+
+        // Verificamos que el usuario no haya terminado la pruena
+        if (inscripcion.fecha_finalizacion_prueba !== null) {
+            return res.status(400).json({ error: 'Has alcanzado el número de intentos permitidos para esta prueba' });
+        }
+
+
+        // Si el estudiante ya posee una fecha de inicio registrada de la prueba, recuperamos sus respuestas
+        let respuestas = [];
+        let tiempo_prueba = 0;
+
+        if (inscripcion.fecha_inicio_prueba) {
+
+            respuestas = await Respuesta.findAll({
+                where: {
+                    inscripcion_id: inscripcion.id
+                }
+            });
+
+        }else{
+
+            // Creamos los valores predeterminados del inicio de la prueba si este aun no la iniciado
+            await inscripcion.update({
+                fecha_inicio_prueba: moment().tz('America/Bogota'),
+                tiempo_restante_prueba: convocatoria.Prueba.duracion
+            });
+
+        }
+
+        tiempo_prueba = inscripcion.tiempo_restante_prueba;
+
+        return res.status(200).json({ tiempo_prueba, respuestas });
+
+    } catch (error) {
+        const doTest = new Error(`Ocurrio un problema al presentar la prueba - ${error.message}`);
+        doTest.stack = error.stack; 
+        next(doTest);
+    }
+
+};
 
 
 const convocatoriaController = {
@@ -569,7 +877,11 @@ const convocatoriaController = {
     updateConvocatoria,
     presentarPrueba,
     getEstudiantesConvocatoria,
-    getPreguntasConvocatoria
+    getPreguntasConvocatoria,
+    getConvocatoriasEstudiante,
+    expulsarEstudianteConvocatoria,
+    createStudent,
+    terminarPrueba
 
 };
 
