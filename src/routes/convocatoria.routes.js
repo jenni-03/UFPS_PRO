@@ -67,7 +67,7 @@ router.post('/:id/presentarPrueba', [ extractToken, verifyJWT ], convocatoriaCon
 // @desc Endpoint encargado de la obtención de todos las preguntas asociadas a la prueba de una convocatoria
 // @route GET /api/convocatoria/:id/getPreguntas
 // @access solo Admin
-router.get('/:id/getPreguntas', [ extractToken, verifyJWT, isAdmin ], convocatoriaController.getPreguntasConvocatoria);
+router.get('/:id/getPreguntas', [ extractToken, verifyJWT ], convocatoriaController.getPreguntasConvocatoria);
 
 
 // @desc Endpoint encargado de la expulsión de un usuario asociado a una convocatoria especifica
