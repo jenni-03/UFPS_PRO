@@ -11,6 +11,9 @@ import { Op } from 'sequelize';
 import { validarFechaCoherente } from '../util/validarFechaCoherente.js';
 import { tieneDuplicados } from '../util/duplicatedStudents.js';
 import moment from 'moment';
+import Respuesta from '../models/Respuesta.js';
+import ConfiguracionCategoria from '../models/ConfiguracionCategoria.js';
+import Pregunta from '../models/Pregunta.js';
 
 
 // ########## ADMIN ####################### 
@@ -508,34 +511,51 @@ const expulsarEstudianteConvocatoria = async (req, res, next) => {
 
 /* --------- getPreguntasConvocatoria function -------------- */
 
-const getPreguntasConvocatoria = async (req, res) => {
+const getPreguntasConvocatoria = async (req, res, next) => {
+
+    // Obtenemos el id de la convocatoria
+    const {id} = req.params;
 
     try{
 
-        // Obtenemos el id de la convocatoria
-        const {id} = req.params;
-
-        // Verificamos el id de entrada
-        const regexId = /^[0-9]+$/; // Expresión regular que controla solo la admición de numeros
-
-        if (!regexId.test(id)) {
-            return res.status(400).json({ error: 'id no valido' });
-        }
-
         // Consultamos la convocatoria y verificamos su existencia
-        const convocatoria = await Convocatoria.findByPk(id);
+        const convocatoria = await Convocatoria.findByPk(id, {
+            include: {
+                model: Prueba
+            }
+        });
 
         if(!convocatoria){
             return res.status(400).json({ error: 'No se encuentra la convocatoria especificada' });
         }
 
         // Obtenemos la prueba asociada a la convocatoria
-        const prueba = await convocatoria.getPrueba();
+        const prueba = await Prueba.findByPk(convocatoria.prueba_id, {
 
-        // Obtenemos las preguntas a partir de la prueba
-        const preguntas = await Prueba.findAll({
-            
+            include: {
+                model: ConfiguracionCategoria,
+                as: 'Configuraciones_categorias',
+                include: {
+                    model: Pregunta,
+                    attributes: ['texto_pregunta', 'opciones'],
+                    as: 'Preguntas',
+                    through: {
+                        attributes: []
+                    }
+                }
+            }
+
         });
+
+        let preguntas = [];
+
+        for (let configuracionCategoria of prueba.Configuraciones_categorias){
+
+            configuracionCategoria.Preguntas.map(pregunta => {
+                preguntas.push({ texto: pregunta.texto_pregunta, opciones: JSON.parse(pregunta.opciones) });
+            });
+
+        }
 
         return res.status(200).json(preguntas);
 
@@ -718,53 +738,32 @@ const presentarPrueba = async (req, res) => {
 
     try {
 
-        // Obtenemos el usuario 
-
-        const username = req.user.username;
-
-        const user = await Usuario.findOne({
-            where: {
-                email: username
-            }
-        });
-
-
-        // Obtenemos los datos de la convocatoria
-
+        // Obtenemos el identificador del usuario y la convocatoria
+        const userId = req.user.id;
         const { id } = req.params;
 
-        const convocatoria = await Convocatoria.findOne({
-            where: {
-                id,
-                estado: 1
-            },
-            include: {
-                model: Prueba
-            }
-        });
+        // Obtenemos el usuario y la convocatoria respectivamente
+        const [user, convocatoria] = await Promise.all([
+
+            Usuario.findByPk(userId),
+            Convocatoria.findOne({
+                where: {
+                    id,
+                    estado: 1
+                },
+                include: {
+                    model: Prueba
+                }
+            })
+
+        ]);
 
         if (!convocatoria) {
             return res.status(400).json({ error: 'No se encontro la convocatoria especificada o no esta disponible en este momento' });
         }
 
 
-        // Verificamos la disponibilidad de la convocatoria
-
-        const fecha_actual = new Date().getTime();
-        const inicio_convocatoria = new Date(convocatoria.fecha_inicio).getTime();
-        const fin_convocatoria = new Date(convocatoria.fecha_fin).getTime();
-
-        if (inicio_convocatoria < fecha_actual) {
-            return res.status(400).json({ error: 'La convocatoria no está disponible en este momento' });
-        }
-
-        if (fin_convocatoria > fecha_actual) {
-            return res.status(400).json({ error: 'La convocatoria ha finalizado, favor contactar con el director en caso de un error' });
-        }
-
-
         // Validamos la legitimidad de la inscripción del estudiante
-
         const inscripcion = await Inscripcion.findOne({
             where: {
                 usuario_id: user.id,
@@ -777,24 +776,56 @@ const presentarPrueba = async (req, res) => {
         }
 
 
+        // Verificamos la disponibilidad de la convocatoria
+        const fecha_actual = moment().tz('America/Bogota');
+        const inicio_convocatoria = moment(convocatoria.fecha_inicio);
+        const fin_convocatoria = moment(convocatoria.fecha_fin);
+
+        if (fecha_actual.isBefore(inicio_convocatoria)) {
+            return res.status(400).json({ error: 'El inicio de la convocatoria no esta programado para este momento' });
+        }
+
+        if (fecha_actual.isSameOrAfter(fin_convocatoria)) {
+            return res.status(400).json({ error: 'La convocatoria ha finalizado, favor contactar con el director en caso de un error' });
+        }
+
+
         // Verificamos que el usuario no haya terminado la pruena
-
-        if (inscripcion.fecha_finalizacion_prueba) {
-            return res.status(400).json({ error: 'El número de intentos permitidos para esta prueba es solamente uno' });
+        if (inscripcion.fecha_finalizacion_prueba !== null) {
+            return res.status(400).json({ error: 'Has alcanzado el número de intentos permitidos para esta prueba' });
         }
 
 
-        // Creamos los valores predeterminados del inicio de la prueba si este aun no la iniciado
-        if (!inscripcion.fecha_inicio_prueba) {
+        // Si el estudiante ya posee una fecha de inicio registrada de la prueba, recuperamos sus respuestas
+        let respuestas = [];
+        let tiempo_prueba = 0;
 
-            res.status(200).json(convocatoria);
+        if (inscripcion.fecha_inicio_prueba) {
+
+            respuestas = await Respuesta.findAll({
+                where: {
+                    inscripcion_id: inscripcion.id
+                }
+            });
+
+        }else{
+
+            // Creamos los valores predeterminados del inicio de la prueba si este aun no la iniciado
+            await inscripcion.update({
+                fecha_inicio_prueba: moment().tz('America/Bogota'),
+                tiempo_restante_prueba: convocatoria.Prueba.duracion
+            });
 
         }
 
-        res.status(200).json({ message: `Bienvenido` });
+        tiempo_prueba = inscripcion.tiempo_restante_prueba;
+
+        return res.status(200).json({ tiempo_prueba, respuestas });
 
     } catch (error) {
-        res.status(500).json({ error: `Error al presentar la prueba: ${error.message}` });
+        const doTest = new Error(`Ocurrio un problema al presentar la prueba - ${error.message}`);
+        doTest.stack = error.stack; 
+        next(doTest);
     }
 
 };
