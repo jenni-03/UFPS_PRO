@@ -537,7 +537,7 @@ const getPreguntasConvocatoria = async (req, res, next) => {
                 as: 'Configuraciones_categorias',
                 include: {
                     model: Pregunta,
-                    attributes: ['texto_pregunta', 'opciones', 'imagen'],
+                    attributes: ['id', 'texto_pregunta', 'opciones', 'imagen'],
                     as: 'Preguntas',
                     through: {
                         attributes: []
@@ -732,9 +732,47 @@ const getConvocatoriasEstudiante = async (req, res, next) => {
 }
 
 
+/** -------- terminarPrueba function ----------------- */
+
+const terminarPrueba = async (req, res, next) => {
+
+    try{
+
+        // Obtenemos el identificador del usuario y la convocatoria
+        const userId = req.user.id;
+        const { id } = req.params;
+
+
+        // Obtenemos la inscripción del estudiante a la prueba
+        const inscripcion = await Inscripcion.findOne({
+            where: {
+                usuario_id: userId,
+                convocatoria_id: id
+            }
+        });
+
+
+        // Actualizamos la fecha de terminación de la prueba
+        await inscripcion.update({
+            where: {
+                fecha_finalizacion_prueba: moment().tz('America/Bogota')
+            }
+        });
+
+        res.status(200).json({ message: 'Prueba finalizada correctamente' });
+
+    }catch(error){
+        const endTest = new Error(`Ocurrio un problema al finalizar la prueba - ${error.message}`);
+        endTest.stack = error.stack; 
+        next(endTest);
+    }
+
+};
+
+
 /** -------- presentarPrueba function ----------------- */
 
-const presentarPrueba = async (req, res) => {
+const presentarPrueba = async (req, res, next) => {
 
     try {
 
@@ -842,7 +880,8 @@ const convocatoriaController = {
     getPreguntasConvocatoria,
     getConvocatoriasEstudiante,
     expulsarEstudianteConvocatoria,
-    createStudent
+    createStudent,
+    terminarPrueba
 
 };
 

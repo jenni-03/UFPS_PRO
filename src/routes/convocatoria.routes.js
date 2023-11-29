@@ -96,6 +96,12 @@ router.post('/:id/registroEstudiante', [ extractToken, verifyJWT, isAdmin, valid
 router.post('/:id/presentarPrueba', [ extractToken, verifyJWT ], convocatoriaController.presentarPrueba);
 
 
+// @desc Endpoint encargado de la terminación de la prueba asociada a la convocatoria
+// @route POST /api/convocatoria/:id/terminarPrueba
+// @access Estudiantes
+router.post('/:id/terminarPrueba', [ extractToken, verifyJWT ], convocatoriaController.terminarPrueba);
+
+
 // @desc Endpoint encargado de la obtención de todas las convocatorias activas asociadas a un estudiante
 // @route GET /api/convocatoria/obtenerConvocatorias/estudiante
 // @access Estudiantes
