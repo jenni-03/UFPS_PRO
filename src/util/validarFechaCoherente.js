@@ -8,12 +8,11 @@ import moment from 'moment';
  */
 export function validarFechaCoherente(fecha_inicio, fecha_fin) {
 
-    console.log('Hora real Inicio?', fecha_inicio);
-    console.log('Hora real Fin?', fecha_fin);
+    const fecha_inicio_col = fecha_inicio.add(5, 'hours');
+    const fecha_fin_col = fecha_fin.add(5, 'hours');
 
-    //console.log('Hora sin modificar inicio', fecha_inicio);
-    //console.log('Hora sin modificar Fin', fecha_fin);
-
+    console.log('Hora real Inicio?', fecha_inicio_col);
+    console.log('Hora real Fin?', fecha_fin_col);
 
     // Fechas a comparar
     const fechaActual = moment().tz('America/Bogota');
