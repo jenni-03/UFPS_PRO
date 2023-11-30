@@ -753,10 +753,8 @@ const terminarPrueba = async (req, res, next) => {
 
 
         // Actualizamos la fecha de terminación de la prueba
-        await inscripcion.update({
-            where: {
-                fecha_finalizacion_prueba: moment().tz('America/Bogota')
-            }
+        await inscripcion.update({ 
+            fecha_finalizacion_prueba: moment().tz('America/Bogota')
         });
 
         res.status(200).json({ message: 'Prueba finalizada correctamente' });
