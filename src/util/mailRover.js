@@ -4,7 +4,7 @@ import configuration from '../config.js';
 const OAuth2 = google.auth.OAuth2;
 
 // Obtenemos las credenciales del correo
-const { email_address, oauth_client_id, oauth_client_secret, oauth_refresh_token } = configuration;
+const { email_address, oauth_client_id, oauth_client_secret, oauth_refresh_token, email_password } = configuration;
 
 
 // Creamos un objeto de configuracion con las credenciales
@@ -13,6 +13,7 @@ const accountTransport = {
     auth: {
         type: 'OAuth2',
         user: email_address,
+        pass: email_password,
         clientId: oauth_client_id,
         clientSecret: oauth_client_secret,
         refreshToken: oauth_refresh_token
