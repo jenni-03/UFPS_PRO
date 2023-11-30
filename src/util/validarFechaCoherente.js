@@ -8,14 +8,14 @@ import moment from 'moment';
  */
 export function validarFechaCoherente(fecha_inicio, fecha_fin) {
 
-    console.log(fecha_inicio);
-    console.log(fecha_fin);
+    console.log(fecha_inicio.utcOffset(-5));
+    console.log(fecha_fin.utcOffset(-5));
 
 
     // Fechas a comparar
     const fechaActual = moment().tz('America/Bogota');
 
-    console.log(fecha_actual);
+    console.log(fechaActual);
 
     if (fecha_inicio.isBefore(fechaActual)) {
         return 'La fecha de inicio de la convocatoria no es coherente';
