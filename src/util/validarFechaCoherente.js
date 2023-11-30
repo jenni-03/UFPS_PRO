@@ -8,8 +8,11 @@ import moment from 'moment';
  */
 export function validarFechaCoherente(fecha_inicio, fecha_fin) {
 
-    console.log(fecha_inicio.utcOffset(-5));
-    console.log(fecha_fin.utcOffset(-5));
+    console.log('Hora real Inicio?', fecha_inicio.utcOffset(+5));
+    console.log('Hora real Fin?', fecha_fin.utcOffset(+5));
+
+    console.log('Hora sin modificar inicio', fecha_inicio);
+    console.log('Hora sin modificar Fin', fecha_fin);
 
 
     // Fechas a comparar
