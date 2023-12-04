@@ -147,7 +147,7 @@ const createEmailEstructure = (id, nombre, apellido, redirectURL, resetString) =
 
     const response = {
         body: {
-            greeting: 'Corial saludo',
+            greeting: 'Cordial saludo',
             name: `${nombre} ${apellido}`,
             intro: 'Has recibido este correo debido a que recibimos una solicitud de cambio de contraseña de tu parte',
             action: {

@@ -1,6 +1,7 @@
 import Pregunta from '../models/Pregunta.js';
 import Categoria from '../models/Categoria.js';
 import ConfiguracionCategoria from '../models/ConfiguracionCategoria.js';
+import { Op } from 'sequelize';
 
 
 /**
@@ -137,7 +138,9 @@ const validCantQuestions = async (semestre, categoria_id) => {
         const numero_preguntas = await Pregunta.findAll({
             where: {
                 categoria_id,
-                semestre,
+                semestre: {
+                    [Op.lte]: semestre,
+                },
                 estado: 1
             }
         });

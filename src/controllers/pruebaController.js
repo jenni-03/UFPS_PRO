@@ -88,7 +88,7 @@ const getTestId = async (req, res, next) => {
 const createTest = async (req, res, next) => {
 
     // Obtenemos los datos de el estudiante a crear
-    const { nombre, descripcion, semestre, duracion, total_preguntas, competencias, valorCategorias, categorias, preguntas } = req.body;
+    const { nombre, descripcion, semestre, duracion, total_preguntas, competencias, valorCategorias } = req.body;
 
     // Variable para almacenar la instancia de la prueba creada
     let result;

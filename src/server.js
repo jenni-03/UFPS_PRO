@@ -11,6 +11,8 @@ import pino_http from 'pino-http';
 import pino from 'pino';
 import helmet from 'helmet';
 import bodyParser from 'body-parser';
+import cerrarConvocatoriasVencidas from './util/cerrarConvocatorias.js';
+import schedule from 'node-schedule';
 
 
 // Importamos las tablas a crear
@@ -103,6 +105,13 @@ app.all('*', (req, res) => {
 
 // Middleware de manejo de errores
 app.use(errorHandler);
+
+
+// Tarea encargada de cerrar las convocatorias automaticamente
+schedule.scheduleJob('0 0 18 * *', () => {
+    cerrarConvocatoriasVencidas();
+    logger.info('Tarea programada de cierre automático de convocatorias ejecutada.');
+});
 
 
 // Corremos el servidor

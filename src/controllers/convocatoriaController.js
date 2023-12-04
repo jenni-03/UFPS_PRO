@@ -14,6 +14,8 @@ import moment from 'moment';
 import Respuesta from '../models/Respuesta.js';
 import ConfiguracionCategoria from '../models/ConfiguracionCategoria.js';
 import Pregunta from '../models/Pregunta.js';
+import logger from '../middlewares/logger.js';
+import Respuesta from '../models/Respuesta.js';
 
 
 // ########## ADMIN ####################### 
@@ -411,7 +413,27 @@ const updateConvocatoria = async (req, res, next) => {
             fecha_inicio: new Date(fecha_inicio),
             fecha_fin: new Date(fecha_fin),
             prueba_id
-        })
+        });
+
+
+        // Si la convocatoria es desactivada, deshabilitamos todas las inscripciones asociadas a esta y calculamos los resultados
+        if(!convocatoria.estado){
+
+            await Inscripcion.update({ estado: 0 }, {
+
+                where: {
+                    convocatoria_id: convocatoria.id
+                }
+
+            });
+
+
+            // Calculamos los resultados
+
+            // Registramos el suceso
+            logger.info(`La convocatoria ${convocatoria.nombre} fue cerrada manualmente`);
+
+        }
 
         res.status(200).json({ message:'Convocatoria actualizada correctamente'});
 
@@ -552,7 +574,7 @@ const getPreguntasConvocatoria = async (req, res, next) => {
         for (let configuracionCategoria of prueba.Configuraciones_categorias){
 
             configuracionCategoria.Preguntas.map(pregunta => {
-                preguntas.push({ texto: pregunta.texto_pregunta, opciones: JSON.parse(pregunta.opciones), imagen: pregunta.imagen });
+                preguntas.push({ id: pregunta.id, texto: pregunta.texto_pregunta, opciones: JSON.parse(pregunta.opciones), imagen: pregunta.imagen });
             });
 
         }
@@ -676,6 +698,56 @@ const createStudent =  async (req, res, next) => {
 // ########## Estudiante #######################
 
 
+/* --------- setProgresoEstudiante function -------------- */
+
+const setProgresoEstudiante = async () => {
+
+    try {
+
+        // Obtenemos el id del usuario
+        const userId = req.user.id;
+
+        // Obtenemos el id de la convocatoria
+        const { id } = req.params;
+        
+        // Obtenemos el id de la pregunta, el tiempo y la opcion seleccionada
+        const { id_pregunta, tiempo,  opcion } = req.body;
+
+        // Obtenemos la inscripción del estudiante a la prueba
+        const inscripcion = await Inscripcion.findOne({
+            where: {
+                usuario_id: userId,
+                convocatoria_id: id
+            }
+        });
+
+        // Registramos la respuesta
+        await Respuesta.create({
+            opcion,
+            inscripcion_id: inscripcion.id,
+            pregunta_id: id_pregunta
+        });
+
+
+        // Actualizamos el tiempo del estudiante
+        await inscripcion.update({
+            tiempo_restante_prueba: tiempo
+        });
+
+
+        return res.status(200).json({ message: 'OK' });
+
+
+    } catch (error) {
+        const setProEst = new Error(`Ocurrio un problema al guardar el progreso del estudiante - ${error.message}`);
+        setProEst.stack = error.stack; 
+        next(setProEst);
+    }
+
+
+};
+
+
 const getConvocatoriasEstudiante = async (req, res, next) => {
 
     // Obtenemos el id del usuario
@@ -703,7 +775,7 @@ const getConvocatoriasEstudiante = async (req, res, next) => {
         });
 
     
-        // Obtenemos los estudiantes a partir de sus inscripciones
+        // Obtenemos las convocatorias a partir de sus inscripciones
         const convocatorias = inscripciones.map(inscripcion => {
 
             console.log(Object.keys(inscripcion));
@@ -756,6 +828,8 @@ const terminarPrueba = async (req, res, next) => {
         await inscripcion.update({ 
             fecha_finalizacion_prueba: moment().tz('America/Bogota')
         });
+
+        // calcular resultados prueba
 
         res.status(200).json({ message: 'Prueba finalizada correctamente' });
 
@@ -879,7 +953,8 @@ const convocatoriaController = {
     getConvocatoriasEstudiante,
     expulsarEstudianteConvocatoria,
     createStudent,
-    terminarPrueba
+    terminarPrueba,
+    setProgresoEstudiante
 
 };
 
