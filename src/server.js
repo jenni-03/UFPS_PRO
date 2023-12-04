@@ -108,7 +108,7 @@ app.use(errorHandler);
 
 
 // Tarea encargada de cerrar las convocatorias automaticamente
-schedule.scheduleJob('0 0 18 * *', () => {
+schedule.scheduleJob('0 40 18 * *', () => {
     cerrarConvocatoriasVencidas();
     logger.info('Tarea programada de cierre automático de convocatorias ejecutada.');
 });

@@ -1,8 +1,8 @@
-import Convocatoria from "../models/Convocatoria";
+import Convocatoria from "../models/Convocatoria.js";
 import moment from "moment";
 import { Op } from 'sequelize';
-import logger from "../middlewares/logger";
-import Inscripcion from "../models/Inscripcion";
+import logger from "../middlewares/logger.js";
+import Inscripcion from "../models/Inscripcion.js";
 
 
 /**

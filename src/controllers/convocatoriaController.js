@@ -15,7 +15,6 @@ import Respuesta from '../models/Respuesta.js';
 import ConfiguracionCategoria from '../models/ConfiguracionCategoria.js';
 import Pregunta from '../models/Pregunta.js';
 import logger from '../middlewares/logger.js';
-import Respuesta from '../models/Respuesta.js';
 
 
 // ########## ADMIN ####################### 
