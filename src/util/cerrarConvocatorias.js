@@ -23,6 +23,7 @@ const cerrarConvocatoriasVencidas = async () => {
             },
 
         });
+        console.log(convocatoriasAVencer);
 
         if (convocatoriasAVencer.length === 0){
 
@@ -33,14 +34,15 @@ const cerrarConvocatoriasVencidas = async () => {
             // Actualiza el estado de la convocatoria a "cerrada" y Deshabilitamos todas las inscripciones asociadas a esa convocatoria
             for (const convocatoria of convocatoriasAVencer) {
 
-                await Promise.all([
-                    convocatoria.update({ estado: 0 }),
-                    Inscripcion.update({ estado: 0 }, {
-                        where: {
-                            convocatoria_id: convocatoria.id
-                        }
-                    })
-                ]);
+                
+                await convocatoria.update({ estado: 0 });
+
+                await Inscripcion.update({ estado: 0 }, {
+                    where: {
+                        convocatoria_id: convocatoria.id
+                    }
+                })
+                
 
                 // Calcular resultados
                 
