@@ -13,6 +13,7 @@ import helmet from 'helmet';
 import bodyParser from 'body-parser';
 import cerrarConvocatoriasVencidas from './util/cerrarConvocatorias.js';
 import schedule from 'node-schedule';
+import { CronJob } from 'cron';
 
 
 // Importamos las tablas a crear
@@ -107,13 +108,6 @@ app.all('*', (req, res) => {
 app.use(errorHandler);
 
 
-// Tarea encargada de cerrar las convocatorias automaticamente
-schedule.scheduleJob('0 05 19 * *', async () => {
-    await cerrarConvocatoriasVencidas();
-    logger.info('Tarea programada de cierre automático de convocatorias ejecutada.');
-});
-
-
 // Corremos el servidor
 const main = async () => {
 
@@ -138,6 +132,16 @@ const main = async () => {
         server.keepAliveTimeout = 10000;
         server.headersTimeout = 20000;
         server.requestTimeout = 15000;
+
+        
+        // Tarea encargada de cerrar las convocatorias automaticamente
+        const job = new CronJob('06 20 * * *', () => {
+            cerrarConvocatoriasVencidas();
+            console.log('Tarea programada de cierre automático de convocatorias ejecutada.');
+        }, null, true, 'America/Bogota'); // Especifica la zona horaria
+        
+        // Inicia la tarea
+        job.start();
 
     } catch (err) {
         logger.error(err, `Error al intentar sincronizar con la BD`);
