@@ -699,7 +699,7 @@ const createStudent =  async (req, res, next) => {
 
 /* --------- setProgresoEstudiante function -------------- */
 
-const setProgresoEstudiante = async () => {
+const setProgresoEstudiante = async (req, res, next) => {
 
     try {
 
