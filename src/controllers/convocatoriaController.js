@@ -712,24 +712,45 @@ const setProgresoEstudiante = async (req, res, next) => {
         // Obtenemos el id de la pregunta, el tiempo y la opcion seleccionada
         const { id_pregunta, tiempo,  opcion } = req.body;
 
-        // Obtenemos la inscripción del estudiante a la prueba
-        const inscripcion = await Inscripcion.findOne({
-            where: {
-                usuario_id: userId,
-                convocatoria_id: id
-            }
-        });
+        // Obtenemos la inscripción del estudiante a la prueba y Verificamos si el usuario ya tiene registrado una respuesta a esa pregunta
+        const [ inscripcion, respuesta ] = await Promise.all([
 
+            Inscripcion.findOne({ 
+                where: {
+                    usuario_id: userId,
+                    convocatoria_id: id
+                }
+            }),
+            Respuesta.findOne({
+                where: {
+                    inscripcion_id: inscripcion.id,
+                    pregunta_id: id_pregunta
+                }
+            })
+            
+            
+        ])
         
         // Verificamos que el usuario haya seleccionado una opción
         if (opcion !== null) {
 
-            // Registramos la respuesta
-            await Respuesta.create({
-                opcion,
-                inscripcion_id: inscripcion.id,
-                pregunta_id: id_pregunta
-            });
+            if (!respuesta){
+
+                // Registramos la respuesta
+                await Respuesta.create({
+                    opcion,
+                    inscripcion_id: inscripcion.id,
+                    pregunta_id: id_pregunta
+                });
+
+            }else{
+
+                // Actualizamos la respuesta
+                await respuesta.update({
+                    opcion
+                });
+
+            }
 
         }
 
