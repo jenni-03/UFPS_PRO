@@ -108,8 +108,8 @@ app.use(errorHandler);
 
 
 // Tarea encargada de cerrar las convocatorias automaticamente
-schedule.scheduleJob('0 56 18 * *', () => {
-    cerrarConvocatoriasVencidas();
+schedule.scheduleJob('0 05 19 * *', async () => {
+    await cerrarConvocatoriasVencidas();
     logger.info('Tarea programada de cierre automático de convocatorias ejecutada.');
 });
 

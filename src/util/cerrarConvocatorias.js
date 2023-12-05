@@ -24,6 +24,7 @@ const cerrarConvocatoriasVencidas = async () => {
 
         });
         console.log(convocatoriasAVencer);
+        console.log('BENECOSSSSSS')
 
         if (convocatoriasAVencer.length === 0){
 
