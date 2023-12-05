@@ -720,13 +720,18 @@ const setProgresoEstudiante = async () => {
             }
         });
 
-        // Registramos la respuesta
-        await Respuesta.create({
-            opcion,
-            inscripcion_id: inscripcion.id,
-            pregunta_id: id_pregunta
-        });
+        
+        // Verificamos que el usuario haya seleccionado una opción
+        if (opcion !== null) {
 
+            // Registramos la respuesta
+            await Respuesta.create({
+                opcion,
+                inscripcion_id: inscripcion.id,
+                pregunta_id: id_pregunta
+            });
+
+        }
 
         // Actualizamos el tiempo del estudiante
         await inscripcion.update({
