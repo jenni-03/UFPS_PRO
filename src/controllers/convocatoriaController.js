@@ -15,6 +15,8 @@ import Respuesta from '../models/Respuesta.js';
 import ConfiguracionCategoria from '../models/ConfiguracionCategoria.js';
 import Pregunta from '../models/Pregunta.js';
 import logger from '../middlewares/logger.js';
+import calcularResultado from '../util/CalcularResultados.js';
+import Resultado from '../models/Resultado.js';
 
 
 // ########## ADMIN ####################### 
@@ -428,6 +430,31 @@ const updateConvocatoria = async (req, res, next) => {
 
 
             // Calculamos los resultados
+            const prueba = await convocatoria.getPrueba();
+
+            const inscripciones = await Inscripcion.findAll({
+                where: {
+                    convocatoria_id: convocatoria.id
+                },
+                include: [{
+                    model: Resultado,
+                    as: 'Resultados'
+                }]
+            });
+
+            // Crear un array para almacenar todas las promesas
+            let promesas = [];
+
+            for (let inscripcion of inscripciones){
+                // Verificamos si para la inscripción ya se generaron los resultados
+                if (inscripcion.Resultados.length === 0){
+                    // Agregar la promesa al array
+                    promesas.push(calcularResultado(prueba.id, inscripcion.id));
+                }
+            }
+
+            // Esperar a que todas las promesas se resuelvan
+            await Promise.all(promesas);
 
             // Registramos el suceso
             logger.info(`La convocatoria ${convocatoria.nombre} fue cerrada manualmente`);
@@ -838,13 +865,18 @@ const terminarPrueba = async (req, res, next) => {
         const { id } = req.params;
 
 
-        // Obtenemos la inscripción del estudiante a la prueba
-        const inscripcion = await Inscripcion.findOne({
-            where: {
-                usuario_id: userId,
-                convocatoria_id: id
-            }
-        });
+        // Obtenemos la inscripción del estudiante a la prueba y su convocatoria
+        const [ convocatoria, inscripcion ] = await Promise.all([
+
+            Convocatoria.findByPk(id),
+            Inscripcion.findOne({
+                where: {
+                    usuario_id: userId,
+                    convocatoria_id: id
+                }
+            })
+
+        ]);
 
 
         // Actualizamos la fecha de terminación de la prueba
@@ -853,6 +885,7 @@ const terminarPrueba = async (req, res, next) => {
         });
 
         // calcular resultados prueba
+        await calcularResultado(convocatoria.prueba_id , inscripcion.id);
 
         res.status(200).json({ message: 'Prueba finalizada correctamente' });
 

@@ -3,6 +3,7 @@ import moment from "moment";
 import { Op } from 'sequelize';
 import logger from "../middlewares/logger.js";
 import Inscripcion from "../models/Inscripcion.js";
+import calcularResultado from "./CalcularResultados.js";
 
 
 /**
@@ -44,6 +45,31 @@ const cerrarConvocatoriasVencidas = async () => {
                 
 
                 // Calcular resultados
+                const prueba = await convocatoria.getPrueba();
+
+                const inscripciones = await Inscripcion.findAll({
+                    where: {
+                        convocatoria_id: convocatoria.id
+                    },
+                    include: [{
+                        model: Resultado,
+                        as: 'Resultados'
+                    }]
+                });
+
+                // Crear un array para almacenar todas las promesas
+                let promesas = [];
+
+                for (let inscripcion of inscripciones){
+                    // Verificamos si para la inscripción ya se generaron los resultados
+                    if (inscripcion.Resultados.length === 0){
+                        // Agregar la promesa al array
+                        promesas.push(calcularResultado(prueba.id, inscripcion.id));
+                    }
+                }
+
+                // Esperar a que todas las promesas se resuelvan
+                await Promise.all(promesas);
                 
                 // Aquí puedes implementar notificaciones a estudiantes o administradores si es necesario
                 logger.info(`Convocatoria cerrada automaticamente: ${convocatoria.nombre}`);
