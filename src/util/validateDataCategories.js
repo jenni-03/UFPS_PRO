@@ -71,40 +71,46 @@ export const asignValueCategories = async (pruebaId, valorCategorias, competenci
     // Verficamos los valores de cada una de las categorias
     for (const categoria of categorias) {
 
-        // Obtenemos la categoria y los datos a usar
-        const { id, nombre } = await Categoria.findByPk(categoria.categoria_id);
-        const cant_preguntas_necesarias = categoria.preguntas;
-        const total_prueba_preguntas = total_preguntas;
+        if ( categoria.preguntas !== 0 && categoria.valor !== 0 ){
 
-        // Validamos que la cantidad de preguntas y el porcentaje no supere el total de la prueba
-        if (cant_preguntas_necesarias > total_prueba_preguntas) {
-            res.status(400);
-            throw new Error('La cantidad de preguntas por categoria no puede superar al total de preguntas de la prueba');
+
+            // Obtenemos la categoria y los datos a usar
+            const { id, nombre } = await Categoria.findByPk(categoria.categoria_id);
+            const cant_preguntas_necesarias = categoria.preguntas;
+            const total_prueba_preguntas = total_preguntas;
+
+            // Validamos que la cantidad de preguntas y el porcentaje no supere el total de la prueba
+            if (cant_preguntas_necesarias > total_prueba_preguntas) {
+                res.status(400);
+                throw new Error('La cantidad de preguntas por categoria no puede superar al total de preguntas de la prueba');
+            }
+
+            if (categoria.valor > 100) {
+                res.status(400);
+                throw new Error('El valor porcentual por categoria no puede superar el 100%');
+            }
+
+            // Validamos la cantidad de preguntas por categoria general ingresadas no supere las disponibles
+            const cant_preguntas_actuales = await validCantQuestions(semestre, id);
+
+            if (cant_preguntas_actuales < cant_preguntas_necesarias) {
+                res.status(400);
+                throw new Error(`La cantidad de preguntas solicitadas del ${semestre} semestre para la categoria ${nombre} supera las actualmente disponibles`);
+            }
+
+            total_preguntas_categorias += categoria.preguntas;
+            valor_total_categorias += categoria.valor;
+
+            // Creamos las configuraciones para las categorias
+            await ConfiguracionCategoria.create({
+                cantidad_preguntas: categoria.preguntas,
+                valor_categoria: categoria.valor,
+                prueba_id: pruebaId,
+                categoria_id: categoria.categoria_id
+            }, { transaction: t });
+
+
         }
-
-        if (categoria.valor > 100) {
-            res.status(400);
-            throw new Error('El valor porcentual por categoria no puede superar el 100%');
-        }
-
-        // Validamos la cantidad de preguntas por categoria general ingresadas no supere las disponibles
-        const cant_preguntas_actuales = await validCantQuestions(semestre, id);
-
-        if (cant_preguntas_actuales < cant_preguntas_necesarias) {
-            res.status(400);
-            throw new Error(`La cantidad de preguntas solicitadas del ${semestre} semestre para la categoria ${nombre} supera las actualmente disponibles`);
-        }
-
-        total_preguntas_categorias += categoria.preguntas;
-        valor_total_categorias += categoria.valor;
-
-        // Creamos las configuraciones para las categorias
-        await ConfiguracionCategoria.create({
-            cantidad_preguntas: categoria.preguntas,
-            valor_categoria: categoria.valor,
-            prueba_id: pruebaId,
-            categoria_id: categoria.categoria_id
-        }, { transaction: t });
 
     }
 

@@ -11,15 +11,15 @@ const categorySchema = z.object({
                 invalid_type_error: 'El nombre de la categoria solo puede ser texto',
                 required_error: 'El nombre de la categoria es requerido'
             })
-            .min(3, { message: 'El nombre de la categoria es muy corto' })
-            .max(45, { message: 'El nombre de la categoria supera la cant. de caracteres permitida' }),
+            .min(2, { message: 'El nombre de la categoria es muy corto' })
+            .max(70, { message: 'El nombre de la categoria supera la cant. de caracteres permitida' }),
 
         descripcion: z
             .string({
                 invalid_type_error: 'La descripción solo puede ser texto',
                 required_error: 'La descripción de la categoria es requerida'
             })
-            .min(10, { message: 'La descripción de la categoria es muy corta' })
+            .min(5, { message: 'La descripción de la categoria es muy corta' })
             .max(240, { message: 'La descripción de la categoria supera la cant. de caracteres permitida' }),
         
         estado: z

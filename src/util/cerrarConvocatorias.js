@@ -4,6 +4,7 @@ import { Op } from 'sequelize';
 import logger from "../middlewares/logger.js";
 import Inscripcion from "../models/Inscripcion.js";
 import calcularResultado from "./CalcularResultados.js";
+import Resultado from "../models/Resultado.js";
 
 
 /**
@@ -22,6 +23,16 @@ const cerrarConvocatoriasVencidas = async () => {
                 fecha_fin: { [Op.lte]: currentDate },
                 estado: 1,
             },
+            include: [{
+
+                model: Inscripcion,
+                as: 'Inscripciones',
+                include: [{
+                    model: Resultado,
+                    as: 'Resultados'
+                }]
+
+            }]
 
         });
 
@@ -34,37 +45,25 @@ const cerrarConvocatoriasVencidas = async () => {
             // Actualiza el estado de la convocatoria a "cerrada" y Deshabilitamos todas las inscripciones asociadas a esa convocatoria
             for (const convocatoria of convocatoriasAVencer) {
 
-                
+                // Desactivamos la convocatoria
                 await convocatoria.update({ estado: 0 });
 
+                // Desactivamos las inscripciones asociadas a la convocatoria
                 await Inscripcion.update({ estado: 0 }, {
                     where: {
                         convocatoria_id: convocatoria.id
                     }
-                })
-                
-
-                // Calcular resultados
-                const prueba = await convocatoria.getPrueba();
-
-                const inscripciones = await Inscripcion.findAll({
-                    where: {
-                        convocatoria_id: convocatoria.id
-                    },
-                    include: [{
-                        model: Resultado,
-                        as: 'Resultados'
-                    }]
                 });
 
                 // Crear un array para almacenar todas las promesas
                 let promesas = [];
 
-                for (let inscripcion of inscripciones){
+
+                for (let inscripcion of convocatoria.Inscripciones){
                     // Verificamos si para la inscripción ya se generaron los resultados
                     if (inscripcion.Resultados.length === 0){
                         // Agregar la promesa al array
-                        promesas.push(calcularResultado(prueba.id, inscripcion.id));
+                        promesas.push(calcularResultado(convocatoria.prueba_id, inscripcion.id));
                     }
                 }
 

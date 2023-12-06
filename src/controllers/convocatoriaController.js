@@ -372,7 +372,7 @@ const updateConvocatoria = async (req, res, next) => {
     const { id } = req.params;
 
     // Obtenemos los datos a actualizar
-    const { nombre, prueba_id, descripcion, fecha_inicio, fecha_fin, estado } = req.body;
+    const { nombre, prueba_id, descripcion, fecha_inicio, fecha_fin } = req.body;
 
     try {
 
@@ -410,56 +410,10 @@ const updateConvocatoria = async (req, res, next) => {
         await convocatoria.update({
             nombre,
             descripcion,
-            estado,
             fecha_inicio: new Date(fecha_inicio),
             fecha_fin: new Date(fecha_fin),
             prueba_id
         });
-
-
-        // Si la convocatoria es desactivada, deshabilitamos todas las inscripciones asociadas a esta y calculamos los resultados
-        if(!convocatoria.estado){
-
-            await Inscripcion.update({ estado: 0 }, {
-
-                where: {
-                    convocatoria_id: convocatoria.id
-                }
-
-            });
-
-
-            // Calculamos los resultados
-            const prueba = await convocatoria.getPrueba();
-
-            const inscripciones = await Inscripcion.findAll({
-                where: {
-                    convocatoria_id: convocatoria.id
-                },
-                include: [{
-                    model: Resultado,
-                    as: 'Resultados'
-                }]
-            });
-
-            // Crear un array para almacenar todas las promesas
-            let promesas = [];
-
-            for (let inscripcion of inscripciones){
-                // Verificamos si para la inscripción ya se generaron los resultados
-                if (inscripcion.Resultados.length === 0){
-                    // Agregar la promesa al array
-                    promesas.push(calcularResultado(prueba.id, inscripcion.id));
-                }
-            }
-
-            // Esperar a que todas las promesas se resuelvan
-            await Promise.all(promesas);
-
-            // Registramos el suceso
-            logger.info(`La convocatoria ${convocatoria.nombre} fue cerrada manualmente`);
-
-        }
 
         res.status(200).json({ message:'Convocatoria actualizada correctamente'});
 
@@ -719,6 +673,77 @@ const createStudent =  async (req, res, next) => {
     }
 
 };
+
+
+/* --------- cerrarConvocatoriaManual function -------------- */
+
+const cerrarConvocatoriaManual = async (req, res, next) => {
+
+    //Obtenemos el id de la convocatoria a cerrar
+    const { id } = req.params;
+
+    try {
+
+        await sequelize.transaction(async (t) => {
+
+            // Obtenemos los datos de la convocatoria
+            const convocatoria = await Convocatoria.findByPk(id, {
+
+                include: [{
+
+                    model: Inscripcion,
+                    as: 'Inscripciones',
+                    include: [{
+                        model: Resultado,
+                        as: 'Resultados'
+                    }]
+
+                }]
+
+            });
+
+            if (!convocatoria) {
+                return res.status(400).json({ error: 'No se encuentra ninguna convocatoria con el id especificado' });
+            }
+
+            // Desactivamos la convocatoria
+            await convocatoria.update({ estado: 0 }, { transaction: t });
+
+            // Desactivamos las inscripciones asociadas a la convocatoria
+            await Inscripcion.update({ estado: 0 }, {
+                where: { convocatoria_id: convocatoria.id },
+                transaction: t
+            });
+
+            // Crear un array para almacenar todas las promesas
+            let promesas = [];
+
+            
+            for (let inscripcion of convocatoria.Inscripciones){
+                // Verificamos si para la inscripción ya se generaron los resultados
+                if (inscripcion.Resultados.length === 0){
+                    // Agregar la promesa al array
+                    promesas.push(calcularResultado(convocatoria.prueba_id, inscripcion.id));
+                }
+            }
+
+            // Esperar a que todas las promesas se resuelvan
+            await Promise.all(promesas);
+
+            // Registramos el suceso
+            logger.info(`La convocatoria ${convocatoria.nombre} fue cerrada manualmente`);
+
+        });
+
+        res.status(200).json({ message:'Convocatoria cerrada correctamente'});
+
+    } catch (err) {
+        const errorUpdateConv = new Error(`Ocurrio un problema al intentar finalizar la convocatoria - ${err.message}`);
+        errorUpdateConv.stack = err.stack; 
+        next(errorUpdateConv);
+    }
+
+}
 
 
 // ########## Estudiante #######################
@@ -1010,7 +1035,8 @@ const convocatoriaController = {
     expulsarEstudianteConvocatoria,
     createStudent,
     terminarPrueba,
-    setProgresoEstudiante
+    setProgresoEstudiante,
+    cerrarConvocatoriaManual
 
 };
 

@@ -19,7 +19,7 @@ const testSchema = z.object({
                 invalid_type_error: 'La descripción de la prueba solo puede ser texto',
                 required_error: 'La descripción de la prueba es requerida'
             })
-            .min(30, { message: 'La descripción de la prueba es muy corta' })
+            .min(20, { message: 'La descripción de la prueba es muy corta' })
             .max(200, { message: 'La descripción de la prueba supera la cant. de caracteres permitidos' }),
 
         semestre: z

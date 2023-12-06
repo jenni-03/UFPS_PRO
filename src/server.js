@@ -135,7 +135,7 @@ const main = async () => {
 
         
         // Tarea encargada de cerrar las convocatorias automaticamente
-        const job = new CronJob('06 20 * * *', () => {
+        const job = new CronJob('00 19 * * *', () => {
             cerrarConvocatoriasVencidas();
             console.log('Tarea programada de cierre automático de convocatorias ejecutada.');
         }, null, true, 'America/Bogota'); // Especifica la zona horaria
