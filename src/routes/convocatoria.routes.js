@@ -91,7 +91,7 @@ router.post('/:id/registroEstudiante', [ extractToken, verifyJWT, isAdmin, valid
 // @desc Endpoint encargado de cerrar manualmente una convocatoria
 // @route PUT /api/convocatoria/:id/cerrarConvocatoria
 // @access solo Admin
-router.post('/:id/cerrarConvocatoria', [ extractToken, verifyJWT, isAdmin ], convocatoriaController.cerrarConvocatoriaManual);
+router.put('/:id/cerrarConvocatoria', [ extractToken, verifyJWT, isAdmin ], convocatoriaController.cerrarConvocatoriaManual);
 
 // ########### Estudiante ################
 
