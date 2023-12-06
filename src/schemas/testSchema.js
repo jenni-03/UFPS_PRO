@@ -12,7 +12,7 @@ const testSchema = z.object({
                 required_error: 'El nombre de la prueba es requerido'
             })
             .min(10, { message: 'El nombre de la prueba es muy corto' })
-            .max(55, { message: 'El nombre de la prueba supera la cant. de caracteres permitidos' }),
+            .max(70, { message: 'El nombre de la prueba supera la cant. de caracteres permitidos' }),
 
         descripcion: z
             .string({
