@@ -93,6 +93,7 @@ router.post('/:id/registroEstudiante', [ extractToken, verifyJWT, isAdmin, valid
 // @access solo Admin
 router.put('/:id/cerrarConvocatoria', [ extractToken, verifyJWT, isAdmin ], convocatoriaController.cerrarConvocatoriaManual);
 
+
 // ########### Estudiante ################
 
 // @desc Endpoint encargado de la presentación de la prueba asociada a la convocatoria

@@ -684,7 +684,7 @@ const cerrarConvocatoriaManual = async (req, res, next) => {
 
     try {
 
-        await sequelize.transaction(async (t) => {
+        const convocatoria_final = await sequelize.transaction(async (t) => {
 
             // Obtenemos los datos de la convocatoria
             const convocatoria = await Convocatoria.findByPk(id, {
@@ -702,8 +702,9 @@ const cerrarConvocatoriaManual = async (req, res, next) => {
 
             });
 
-            if (!convocatoria) {
-                return res.status(400).json({ error: 'No se encuentra ninguna convocatoria con el id especificado' });
+            if (!convocatoria || !convocatoria.estado) {
+                res.status(400);
+                throw new Error('No se encuentra ninguna convocatoria con el id especificado');
             }
 
             // Desactivamos la convocatoria
@@ -733,14 +734,16 @@ const cerrarConvocatoriaManual = async (req, res, next) => {
             // Registramos el suceso
             logger.info(`La convocatoria ${convocatoria.nombre} fue cerrada manualmente`);
 
+            return convocatoria;
+
         });
 
-        res.status(200).json({ message:'Convocatoria cerrada correctamente'});
+        return res.status(200).json({ message:`Convocatoria ${convocatoria_final.nombre} cerrada correctamente`});
 
     } catch (err) {
-        const errorUpdateConv = new Error(`Ocurrio un problema al intentar finalizar la convocatoria - ${err.message}`);
-        errorUpdateConv.stack = err.stack; 
-        next(errorUpdateConv);
+        const errorCloseConv = new Error(`Ocurrio un problema al intentar finalizar la convocatoria - ${err.message}`);
+        errorCloseConv.stack = err.stack; 
+        next(errorCloseConv);
     }
 
 }
