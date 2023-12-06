@@ -702,16 +702,15 @@ const cerrarConvocatoriaManual = async (req, res, next) => {
 
         if (!convocatoria || !convocatoria.estado) {
             res.status(400);
-            throw new Error('No se encuentra ninguna convocatoria con el id especificado');
+            throw new Error('No se encuentra ninguna convocatoria activa con el id especificado');
         }
 
         // Desactivamos la convocatoria
-        await convocatoria.update({ estado: 0 }, { transaction: t });
+        await convocatoria.update({ estado: 0 });
 
         // Desactivamos las inscripciones asociadas a la convocatoria
         await Inscripcion.update({ estado: 0 }, {
-            where: { convocatoria_id: convocatoria.id },
-            transaction: t
+            where: { convocatoria_id: convocatoria.id }
         });
 
         // Crear un array para almacenar todas las promesas
