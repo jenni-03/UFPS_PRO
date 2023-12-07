@@ -47,7 +47,7 @@ const getAllTests = async (req, res, next) => {
 
 
 
-/* --------- getAllTests function -------------- */
+/* --------- getTestsStudents function -------------- */
 
 const getTestsStudents = async (req, res, next) => {
 
