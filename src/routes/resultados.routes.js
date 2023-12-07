@@ -16,12 +16,15 @@ const router = Router();
 
 // Rutas
 
-// @desc Endpoint encargado de la obtención de todas las pruebas realizadas por el estudiante
+// @desc Endpoint encargado de la obtención de los resultados obtenidos en una convocatoria especifica
 // @route GET /api/resultados/estudiante/:id
 // @access solo Admin
 router.get('/estudiante/:id', [extractToken, authJWT], resultController.getResultadoEstudiante);
 
-
+// @desc Endpoint encargado de la obtención de metricas basicas para los resultados globales de una convocatoria
+// @route GET /api/resultados/convocatoria/:id
+// @access solo Admin
+router.get('/convocatoria/:id', [extractToken, authJWT, isAdmin], resultController.getMetricasResultadosConvocatoria);
 
 // Exportamos el router
 export default router;
