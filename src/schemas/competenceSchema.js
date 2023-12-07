@@ -11,15 +11,15 @@ export const competenceSchema = z.object({
                 invalid_type_error: 'El nombre de la competencia solo puede ser texto',
                 required_error: 'El nombre de la competencia es requerido'
             })
-            .min(3, { message: 'El nombre de la competencia es muy corto' })
-            .max(45, { message: 'El nombre de la competencia supera la cant. de caracteres permitidos' }),
+            .min(2, { message: 'El nombre de la competencia es muy corto' })
+            .max(70, { message: 'El nombre de la competencia supera la cant. de caracteres permitidos' }),
 
         descripcion: z
             .string({
                 invalid_type_error: 'La descripcion de la competencia solo puede ser texto',
                 required_error: 'La descripcion de la competencia es requerida'
             })
-            .min(10, { message: 'La descripcion de la competencia es muy corta' })
+            .min(5, { message: 'La descripcion de la competencia es muy corta' })
             .max(300, { message: 'La descripcion de la competencia supera la cant. de caracteres permitidos' }),
 
         estado: z

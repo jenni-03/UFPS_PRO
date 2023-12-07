@@ -11,6 +11,8 @@ import pino_http from 'pino-http';
 import pino from 'pino';
 import helmet from 'helmet';
 import bodyParser from 'body-parser';
+import cerrarConvocatoriasVencidas from './util/cerrarConvocatorias.js';
+import { CronJob } from 'cron';
 
 
 // Importamos las tablas a crear
@@ -24,6 +26,7 @@ import competenciaRoutes from './routes/competencia.routes.js';
 import categoriaRoutes from './routes/categoria.routes.js';
 import pruebaRoutes from './routes/prueba.routes.js';
 import convocatoriaRoutes from './routes/convocatoria.routes.js';
+import resultadosRoutes from './routes/resultados.routes.js';
 
 // Inicializar el contexto principal
 const app = express();
@@ -85,6 +88,7 @@ app.use('/api/competencia', competenciaRoutes);
 app.use('/api/categoria', categoriaRoutes);
 app.use('/api/prueba', pruebaRoutes);
 app.use('/api/convocatoria', convocatoriaRoutes);
+app.use('/api/resultados', resultadosRoutes);
 
 
 // En caso de acceder a una ruta no especificada
@@ -129,6 +133,16 @@ const main = async () => {
         server.keepAliveTimeout = 10000;
         server.headersTimeout = 20000;
         server.requestTimeout = 15000;
+
+        
+        // Tarea encargada de cerrar las convocatorias automaticamente
+        const job = new CronJob('00 19 * * *', () => {
+            cerrarConvocatoriasVencidas();
+            console.log('Tarea programada de cierre automático de convocatorias ejecutada.');
+        }, null, true, 'America/Bogota'); // Especifica la zona horaria
+        
+        // Inicia la tarea
+        job.start();
 
     } catch (err) {
         logger.error(err, `Error al intentar sincronizar con la BD`);

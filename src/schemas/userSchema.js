@@ -109,15 +109,15 @@ const studentSchema = z.object({
             invalid_type_error: 'El nombre del estudiante solo puede ser texto',
             required_error: 'El nombre del estudiante es requerido'
         })
-        .min(3, { message: 'El nombre del estudiante es muy corto' })
-        .max(45, { message: 'El nombre del estudiante supera la cant. de caracteres permitida' }),
+        .min(2, { message: 'El nombre del estudiante es muy corto' })
+        .max(50, { message: 'El nombre del estudiante supera la cant. de caracteres permitida' }),
 
         apellido: z
         .string({
             invalid_type_error: 'El apellido del estudiante solo puede ser texto',
             required_error: 'El apellido del estudiante es requerido'
         })
-        .min(3, { message: 'El apellido del estudiante  es muy corto' })
+        .min(2, { message: 'El apellido del estudiante  es muy corto' })
         .max(55, { message: 'El apellido del estudiante supera la cant. de caracteres permitida' }),
 
         codigo: z

@@ -14,6 +14,9 @@ import moment from 'moment';
 import Respuesta from '../models/Respuesta.js';
 import ConfiguracionCategoria from '../models/ConfiguracionCategoria.js';
 import Pregunta from '../models/Pregunta.js';
+import logger from '../middlewares/logger.js';
+import calcularResultado from '../util/CalcularResultados.js';
+import Resultado from '../models/Resultado.js';
 
 
 // ########## ADMIN ####################### 
@@ -369,7 +372,7 @@ const updateConvocatoria = async (req, res, next) => {
     const { id } = req.params;
 
     // Obtenemos los datos a actualizar
-    const { nombre, prueba_id, descripcion, fecha_inicio, fecha_fin, estado } = req.body;
+    const { nombre, prueba_id, descripcion, fecha_inicio, fecha_fin } = req.body;
 
     try {
 
@@ -407,11 +410,10 @@ const updateConvocatoria = async (req, res, next) => {
         await convocatoria.update({
             nombre,
             descripcion,
-            estado,
             fecha_inicio: new Date(fecha_inicio),
             fecha_fin: new Date(fecha_fin),
             prueba_id
-        })
+        });
 
         res.status(200).json({ message:'Convocatoria actualizada correctamente'});
 
@@ -552,7 +554,7 @@ const getPreguntasConvocatoria = async (req, res, next) => {
         for (let configuracionCategoria of prueba.Configuraciones_categorias){
 
             configuracionCategoria.Preguntas.map(pregunta => {
-                preguntas.push({ texto: pregunta.texto_pregunta, opciones: JSON.parse(pregunta.opciones), imagen: pregunta.imagen });
+                preguntas.push({ id: pregunta.id, texto: pregunta.texto_pregunta, opciones: JSON.parse(pregunta.opciones), imagen: pregunta.imagen });
             });
 
         }
@@ -673,7 +675,147 @@ const createStudent =  async (req, res, next) => {
 };
 
 
+/* --------- cerrarConvocatoriaManual function -------------- */
+
+const cerrarConvocatoriaManual = async (req, res, next) => {
+
+    //Obtenemos el id de la convocatoria a cerrar
+    const { id } = req.params;
+
+    try {
+
+        // Obtenemos los datos de la convocatoria
+        const convocatoria = await Convocatoria.findByPk(id, {
+
+            include: [{
+
+                model: Inscripcion,
+                as: 'Inscripciones',
+                include: [{
+                    model: Resultado,
+                    as: 'Resultados'
+                }]
+
+            }]
+
+        });
+
+        if (!convocatoria || !convocatoria.estado) {
+            res.status(400);
+            throw new Error('No se encuentra ninguna convocatoria activa con el id especificado');
+        }
+
+        // Desactivamos la convocatoria
+        await convocatoria.update({ estado: 0 });
+
+        // Desactivamos las inscripciones asociadas a la convocatoria
+        await Inscripcion.update({ estado: 0 }, {
+            where: { convocatoria_id: convocatoria.id }
+        });
+
+        // Crear un array para almacenar todas las promesas
+        let promesas = [];
+
+        for (let inscripcion of convocatoria.Inscripciones){
+            // Verificamos si para la inscripción ya se generaron los resultados
+            if (inscripcion.Resultados.length === 0){
+                // Agregar la promesa al array
+                promesas.push(calcularResultado(convocatoria.prueba_id, inscripcion.id));
+            }
+        }
+
+        // Esperar a que todas las promesas se resuelvan
+        await Promise.all(promesas);
+
+        // Registramos el suceso
+        logger.info(`La convocatoria ${convocatoria.nombre} fue cerrada manualmente`);
+
+        return res.status(200).json({ message:`Convocatoria ${convocatoria.nombre} cerrada correctamente`});
+
+    } catch (err) {
+        const errorCloseConv = new Error(`Ocurrio un problema al intentar finalizar la convocatoria - ${err.message}`);
+        errorCloseConv.stack = err.stack; 
+        next(errorCloseConv);
+    }
+
+}
+
+
 // ########## Estudiante #######################
+
+
+/* --------- setProgresoEstudiante function -------------- */
+
+const setProgresoEstudiante = async (req, res, next) => {
+
+    try {
+
+        // Obtenemos el id del usuario
+        const userId = req.user.id;
+
+        // Obtenemos el id de la convocatoria
+        const { id } = req.params;
+        
+        // Obtenemos el id de la pregunta, el tiempo y la opcion seleccionada
+        const { id_pregunta, tiempo,  opcion } = req.body;
+
+        // Obtenemos la inscripción del estudiante a la prueba y 
+        const inscripcion = await Inscripcion.findOne({ 
+            where: {
+                usuario_id: userId,
+                convocatoria_id: id
+            }
+        });
+
+        // Verificamos si el usuario ya tiene registrado una respuesta a esa pregunta
+        const respuesta = await Respuesta.findOne({
+            where: {
+                inscripcion_id: inscripcion.id,
+                pregunta_id: id_pregunta
+            }
+        });
+
+        
+        // Verificamos que el usuario haya seleccionado una opción
+        if (opcion !== null) {
+
+            if (!respuesta){
+
+                // Registramos la respuesta
+                await Respuesta.create({
+                    opcion,
+                    inscripcion_id: inscripcion.id,
+                    pregunta_id: id_pregunta
+                });
+
+            }else{
+
+                // Actualizamos la respuesta
+                await respuesta.update({
+                    opcion
+                });
+
+            }
+
+        }
+
+        // Actualizamos el tiempo del estudiante
+        await inscripcion.update({
+            tiempo_restante_prueba: tiempo
+        });
+
+
+        return res.status(200).json({ message: 'OK' });
+
+
+    } catch (error) {
+        const setProEst = new Error(`Ocurrio un problema al guardar el progreso del estudiante - ${error.message}`);
+        setProEst.stack = error.stack; 
+        next(setProEst);
+    }
+
+
+};
 
 
 const getConvocatoriasEstudiante = async (req, res, next) => {
@@ -703,7 +845,7 @@ const getConvocatoriasEstudiante = async (req, res, next) => {
         });
 
     
-        // Obtenemos los estudiantes a partir de sus inscripciones
+        // Obtenemos las convocatorias a partir de sus inscripciones
         const convocatorias = inscripciones.map(inscripcion => {
 
             console.log(Object.keys(inscripcion));
@@ -743,19 +885,27 @@ const terminarPrueba = async (req, res, next) => {
         const { id } = req.params;
 
 
-        // Obtenemos la inscripción del estudiante a la prueba
-        const inscripcion = await Inscripcion.findOne({
-            where: {
-                usuario_id: userId,
-                convocatoria_id: id
-            }
-        });
+        // Obtenemos la inscripción del estudiante a la prueba y su convocatoria
+        const [ convocatoria, inscripcion ] = await Promise.all([
+
+            Convocatoria.findByPk(id),
+            Inscripcion.findOne({
+                where: {
+                    usuario_id: userId,
+                    convocatoria_id: id
+                }
+            })
+
+        ]);
 
 
         // Actualizamos la fecha de terminación de la prueba
         await inscripcion.update({ 
             fecha_finalizacion_prueba: moment().tz('America/Bogota')
         });
+
+        // calcular resultados prueba
+        await calcularResultado(convocatoria.prueba_id , inscripcion.id);
 
         res.status(200).json({ message: 'Prueba finalizada correctamente' });
 
@@ -879,7 +1029,9 @@ const convocatoriaController = {
     getConvocatoriasEstudiante,
     expulsarEstudianteConvocatoria,
     createStudent,
-    terminarPrueba
+    terminarPrueba,
+    setProgresoEstudiante,
+    cerrarConvocatoriaManual
 
 };
 

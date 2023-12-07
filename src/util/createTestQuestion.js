@@ -3,6 +3,7 @@ import ConfiguracionCategoria from '../models/ConfiguracionCategoria.js';
 import lodash from 'lodash';
 import PruebaCompetencia from '../models/PruebaCompetencia.js';
 import PreguntaConfiguracion from '../models/PreguntaConfiguracion.js';
+import { Op } from 'sequelize';
 
 
 /**
@@ -42,8 +43,10 @@ const createTestQuestion = async (id_categoria, id_configuracion, cant_preguntas
     //Obtenemos las preguntas que pertenecen al semestre y a la categoria designados
     const questions = await Pregunta.findAll({
         where: {
-            semestre,
             categoria_id: id_categoria,
+            semestre: {
+                [Op.lte]: semestre,
+            },
             estado: 1
         }
     })

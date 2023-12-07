@@ -5,6 +5,9 @@ import { validate_percentage_categories, asignValueCategories } from '../util/va
 import { asignCompetences, asignQuestions } from '../util/createTestQuestion.js';
 import sequelize from '../database/db.js';
 import Categoria from '../models/Categoria.js';
+import Inscripcion from '../models/Inscripcion.js';
+import Resultado from '../models/Resultado.js';
+import Convocatoria from '../models/Convocatoria.js';
 
 
 /* --------- getAllTests function -------------- */
@@ -38,6 +41,111 @@ const getAllTests = async (req, res, next) => {
         const errorGetTest = new Error(`Ocurrio un problema al obtener las pruebas - ${error.message}`);
         errorGetTest.stack = error.stack; 
         next(errorGetTest);
+    }
+
+};
+
+
+
+/* --------- getTestsStudents function -------------- */
+
+const getTestsStudents = async (req, res, next) => {
+
+    try{ 
+
+        // Obtenemos el id del usuario
+        const { id } = req.user;
+
+        // Obtenemos todas las pruebas del estudiante a través de las inscripciones inactivas 
+        const inscripciones = await Inscripcion.findAll({
+            where: {
+                usuario_id: id,
+                estado: 0
+            },
+            attributes: ['id'],
+            include: [
+
+                {
+
+                    model: Convocatoria,
+                    attributes: ['id'],
+                    include: {
+                        model: Prueba,
+                        as: 'Prueba',
+                        attributes: ['nombre', 'puntaje_total'],
+                        include: {
+                            model: Competencia,
+                            attributes: ['nombre']
+                        }
+                    }
+
+                },
+                {
+                    model: Resultado,
+                    attributes: ['puntaje'],
+                    include: {
+                        model: Categoria,
+                        attributes: ['nombre']
+                    }
+                }
+
+            ]
+        });
+
+
+        const pruebas = [];
+
+
+        // Iteramos sobre las inscripciones
+        for (let inscripcion of inscripciones){
+
+            const infoPrueba = {
+                convocatoria_id: 0,
+                nombre_prueba: '',
+                competencias: '',
+                categorias: [],
+                puntaje_total_prueba: 0,
+                puntaje_total_estudiante: 0
+            };
+
+
+            // Convocatoria donde la inscripcion es pertenenciente
+            const convocatoria_inscripcion = inscripcion.Convocatoria;
+
+            // Registramos el id de la convocatoria
+            infoPrueba.convocatoria_id = convocatoria_inscripcion.id;
+
+            // Registramos los datos de la prueba
+            infoPrueba.nombre_prueba = convocatoria_inscripcion.Prueba.nombre;
+
+            infoPrueba.competencias = convocatoria_inscripcion.Prueba.Competencias.map(competencia => competencia.nombre);
+
+            infoPrueba.puntaje_total_prueba = convocatoria_inscripcion.Prueba.puntaje_total;
+
+
+            // Registramos los datos correspondientes a los puntajes
+            let puntaje_parcial = 0;
+
+            inscripcion.Resultados.forEach(resultado => {
+
+                puntaje_parcial += resultado.puntaje;
+                infoPrueba.categorias.push(resultado.Categoria.nombre)
+                
+            });
+
+            infoPrueba.puntaje_total_estudiante = puntaje_parcial;
+
+            pruebas.push(infoPrueba);
+
+        }
+
+        // Respondemos al usuario
+        res.status(200).json(pruebas)
+
+    }catch(error){
+        const errorGetTestEsts = new Error(`Ocurrio un problema al obtener las pruebas - ${error.message}`);
+        errorGetTestEsts.stack = error.stack; 
+        next(errorGetTestEsts);
     }
 
 };
@@ -88,7 +196,7 @@ const getTestId = async (req, res, next) => {
 const createTest = async (req, res, next) => {
 
     // Obtenemos los datos de el estudiante a crear
-    const { nombre, descripcion, semestre, duracion, total_preguntas, competencias, valorCategorias, categorias, preguntas } = req.body;
+    const { nombre, descripcion, semestre, duracion, total_preguntas, competencias, valorCategorias } = req.body;
 
     // Variable para almacenar la instancia de la prueba creada
     let result;
@@ -248,7 +356,8 @@ const testController = {
     getAllTests,
     getTestId, 
     createTest,
-    updateTest
+    updateTest,
+    getTestsStudents
 };
 
 export default testController;

@@ -16,13 +16,7 @@ const User = sequelize.define('Usuarios', {
     },
     nombre: {
         type: DataTypes.STRING,
-        allowNull: false,
-        validate: {
-            len:{
-                args: [3, 45],
-                msg: "El nombre solo ha de contener entre 3 y 45 caracteres"
-            }
-        }
+        allowNull: false
     },
     apellido: {
         type: DataTypes.STRING,

@@ -12,14 +12,14 @@ const convocatorySchema = z.object({
                 required_error: 'El nombre de la convocatoria es requerido'
             })
             .min(5, { message: 'El nombre de la convocatoria es muy corto' })
-            .max(65, { message: 'El nombre de la convocatoria supera la cant. de caracteres permitidos' }),
+            .max(70, { message: 'El nombre de la convocatoria supera la cant. de caracteres permitidos' }),
 
         descripcion: z
             .string({
                 invalid_type_error: 'La descripción de la convocatoria solo puede ser texto',
                 required_error: 'La descripción de la convocatoria es requerida'
             })
-            .min(20, { message: 'La descripción de la convocatoria es muy corta' })
+            .min(10, { message: 'La descripción de la convocatoria es muy corta' })
             .max(450, { message: 'La descripción de la convocatoria supera la cant. de caracteres permitidos' }),
 
         fecha_inicio: z

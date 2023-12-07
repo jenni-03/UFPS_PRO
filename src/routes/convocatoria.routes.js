@@ -88,6 +88,12 @@ router.get('/:id/getEstudiantes', [ extractToken, verifyJWT, isAdmin ], convocat
 router.post('/:id/registroEstudiante', [ extractToken, verifyJWT, isAdmin, validateStudentData ], convocatoriaController.createStudent);
 
 
+// @desc Endpoint encargado de cerrar manualmente una convocatoria
+// @route PUT /api/convocatoria/:id/cerrarConvocatoria
+// @access solo Admin
+router.put('/:id/cerrarConvocatoria', [ extractToken, verifyJWT, isAdmin ], convocatoriaController.cerrarConvocatoriaManual);
+
+
 // ########### Estudiante ################
 
 // @desc Endpoint encargado de la presentación de la prueba asociada a la convocatoria
@@ -100,6 +106,12 @@ router.post('/:id/presentarPrueba', [ extractToken, verifyJWT ], convocatoriaCon
 // @route POST /api/convocatoria/:id/terminarPrueba
 // @access Estudiantes
 router.post('/:id/terminarPrueba', [ extractToken, verifyJWT ], convocatoriaController.terminarPrueba);
+
+
+// @desc Endpoint encargado de la presentación de la prueba asociada a la convocatoria
+// @route PUT /api/convocatoria/:id/guardarProgreso
+// @access Estudiantes
+router.put('/:id/guardarProgreso', [ extractToken, verifyJWT ], convocatoriaController.setProgresoEstudiante);
 
 
 // @desc Endpoint encargado de la obtención de todas las convocatorias activas asociadas a un estudiante
