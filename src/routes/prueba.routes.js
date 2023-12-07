@@ -21,6 +21,12 @@ const router = Router();
 router.get('/', [extractToken, authJWT, isAdmin, validateTestData], testController.getAllTests);
 
 
+// @desc Endpoint encargado de la obtención de todas las pruebas realizadas por el estudiante
+// @route GET /api/prueba/estudiantes
+// @access solo Estudiantes
+router.get('/estudiantes', [extractToken, authJWT], testController.getTestsStudents);
+
+
 // @desc Endpoint encargado de la obtención de una prueba por su id
 // @route GET /api/prueba/:id
 // @access solo Admin
