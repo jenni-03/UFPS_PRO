@@ -37,7 +37,7 @@ export const asignQuestions = async (pruebaId, semestre) => {
  * @param {number} cant_preguntas_categoria 
  * @param {number} semestre 
  */
-const createTestQuestion = async (id_categoria, id_configuracion, cant_preguntas_categoria, semestre) => {
+export const createTestQuestion = async (id_categoria, id_configuracion, cant_preguntas_categoria, semestre) => {
 
 
     //Obtenemos las preguntas que pertenecen al semestre y a la categoria designados

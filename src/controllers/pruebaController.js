@@ -2,12 +2,14 @@ import Prueba from '../models/Prueba.js';
 import Competencia  from '../models/Competencia.js';
 import ConfiguracionCategoria from '../models/ConfiguracionCategoria.js';
 import { validate_percentage_categories, asignValueCategories } from '../util/validateDataCategories.js';
-import { asignCompetences, asignQuestions } from '../util/createTestQuestion.js';
+import { asignCompetences, asignQuestions, createTestQuestion } from '../util/createTestQuestion.js';
 import sequelize from '../database/db.js';
 import Categoria from '../models/Categoria.js';
 import Inscripcion from '../models/Inscripcion.js';
 import Resultado from '../models/Resultado.js';
 import Convocatoria from '../models/Convocatoria.js';
+import PreguntaConfiguracion from '../models/PreguntaConfiguracion.js';
+import Pregunta from '../models/Pregunta.js';
 
 
 /* --------- getAllTests function -------------- */
@@ -265,7 +267,7 @@ const updateTest = async (req, res, next) => {
     const {id} = req.params;
 
     // Obtenemos los datos a actualizar
-    const { nombre, descripcion, duracion, estado, puntaje_total, valoresCategorias } = req.body;
+    const { nombre, descripcion, duracion, estado, puntaje_total, total_preguntas, valoresCategorias } = req.body;
 
     try{
 
@@ -328,16 +330,34 @@ const updateTest = async (req, res, next) => {
                 const percentage = valorCategoria[1];
 
                 // Actualizamos la configuración
-                await ConfiguracionCategoria.update({
-                    valor_categoria: percentage
-                }, {
+                const config = await ConfiguracionCategoria.findOne({
                     where: {
                         categoria_id: categoriaId,
                         prueba_id: id
-                    }, transaction: t
+                    }
                 });
 
+                config.valor_categoria = percentage;
+
+                await config.save({
+                    transaction: t
+                });
+
+                // Actualizamos las preguntas en caso de que el total cambie
+                if (total_preguntas !== prueba.total_preguntas){
+
+                    await PreguntaConfiguracion.destroy({
+                        where: {
+                            configuracion_categoria_id: config.id
+                        }
+                    });
+
+                    await createTestQuestion(config.categoria_id, config.id, config.cantidad_preguntas, prueba.semestre);
+
+                }
+
             }
+
 
         });
 
@@ -352,12 +372,65 @@ const updateTest = async (req, res, next) => {
 };
 
 
+/* --------- getPrevisualizedQuestions function -------------- */
+
+const getPrevisualizedQuestions = async (req, res, next) => {
+
+    // Obtenemos el id de la prueba
+    const {id} = req.params;
+
+    try{
+
+        // Obtenemos la prueba asociada a la convocatoria
+        const prueba = await Prueba.findByPk(id, {
+
+            include: {
+                model: ConfiguracionCategoria,
+                as: 'Configuraciones_categorias',
+                include: {
+                    model: Pregunta,
+                    attributes: ['id', 'texto_pregunta', 'opciones', 'imagen'],
+                    as: 'Preguntas',
+                    through: {
+                        attributes: []
+                    }
+                }
+            }
+
+        });
+
+        if(!prueba){
+            return res.status(400).json({ error: 'No se encuentra la prueba especificada' });
+        }
+
+        let preguntas = [];
+
+        for (let configuracionCategoria of prueba.Configuraciones_categorias){
+
+            configuracionCategoria.Preguntas.map(pregunta => {
+                preguntas.push({ id: pregunta.id, texto: pregunta.texto_pregunta, opciones: JSON.parse(pregunta.opciones), imagen: pregunta.imagen });
+            });
+
+        }
+
+        return res.status(200).json(preguntas);
+
+    }catch(error){
+        const errorGetQuestConv = new Error(`Ocurrio un problema al obtener las preguntas asociadas a la prueba - ${error.message}`);
+        errorGetQuestConv .stack = error.stack; 
+        next(errorGetQuestConv);
+    }
+
+};
+
+
 const testController = {
     getAllTests,
     getTestId, 
     createTest,
     updateTest,
-    getTestsStudents
+    getTestsStudents,
+    getPrevisualizedQuestions
 };
 
 export default testController;
