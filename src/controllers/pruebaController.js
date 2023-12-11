@@ -174,7 +174,7 @@ const getTestId = async (req, res, next) => {
                     }
                 ]
             },
-            attributes: ['id', 'nombre', 'descripcion', 'duracion', 'estado', 'puntaje_total']
+            attributes: ['id', 'nombre', 'descripcion', 'duracion', 'estado', 'puntaje_total', 'total_preguntas']
         });
 
         if(!prueba){
@@ -289,6 +289,11 @@ const updateTest = async (req, res, next) => {
             return res.status(400).json({error: `El nombre de prueba ${nombre} ya se encuentra registrado`});
         }
 
+        // Validamos que la nueva cantidad de preguntas no sea menor o igual a 0
+        if(total_preguntas <= 1){
+            return res.status(400).json({error: 'La cantidad de preguntas minima debe ser mayor de 1'});
+        }
+
         
         // Validamos que los nuevos porcentajes sean coincidentes
         let valor_total_categorias = 0;
@@ -353,7 +358,7 @@ const updateTest = async (req, res, next) => {
                         transaction: t
                     });
 
-                    await updateTestQuestions(config.categoria_id, config.id, config.cantidad_preguntas, prueba.semestre, res);
+                    await updateTestQuestions(config.categoria_id, config.id, total_preguntas, prueba.semestre, res, t);
 
                 }
 

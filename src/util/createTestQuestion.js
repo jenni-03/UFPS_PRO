@@ -74,7 +74,7 @@ const createTestQuestion = async (id_categoria, id_configuracion, cant_preguntas
  * @param {number} semestre 
  * @param {object} res 
  */
-export const updateTestQuestions = async (id_categoria, id_configuracion, cant_preguntas_categoria, semestre, res) => {
+export const updateTestQuestions = async (id_categoria, id_configuracion, cant_preguntas_categoria, semestre, res, t) => {
 
 
     //Obtenemos las preguntas que pertenecen al semestre y a la categoria designados
@@ -88,7 +88,7 @@ export const updateTestQuestions = async (id_categoria, id_configuracion, cant_p
         }
     })
 
-    if (questions.length !== cant_preguntas_categoria){
+    if (questions.length < cant_preguntas_categoria){
         res.status(400);
         throw new Error('El número de preguntas solicitadas supera las actualmente disponibles');
     }
@@ -101,6 +101,8 @@ export const updateTestQuestions = async (id_categoria, id_configuracion, cant_p
         await PreguntaConfiguracion.create({
             pregunta_id: question.id,
             configuracion_categoria_id: id_configuracion
+        }, {
+            transaction: t
         });
 
     }
