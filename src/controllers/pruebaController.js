@@ -166,7 +166,7 @@ const getTestId = async (req, res, next) => {
         const prueba = await Prueba.findByPk(id, {
             include: {
                 model: ConfiguracionCategoria,
-                attributes: ['categoria_id', 'valor_categoria'],
+                attributes: ['categoria_id', 'valor_categoria', 'cantidad_preguntas'],
                 include: [
                     {
                         model: Categoria,
