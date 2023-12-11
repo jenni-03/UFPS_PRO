@@ -2,7 +2,7 @@ import Prueba from '../models/Prueba.js';
 import Competencia  from '../models/Competencia.js';
 import ConfiguracionCategoria from '../models/ConfiguracionCategoria.js';
 import { validate_percentage_categories, asignValueCategories } from '../util/validateDataCategories.js';
-import { asignCompetences, asignQuestions, createTestQuestion } from '../util/createTestQuestion.js';
+import { asignCompetences, asignQuestions, updateTestQuestions } from '../util/createTestQuestion.js';
 import sequelize from '../database/db.js';
 import Categoria from '../models/Categoria.js';
 import Inscripcion from '../models/Inscripcion.js';
@@ -349,10 +349,11 @@ const updateTest = async (req, res, next) => {
                     await PreguntaConfiguracion.destroy({
                         where: {
                             configuracion_categoria_id: config.id
-                        }
+                        },
+                        transaction: t
                     });
 
-                    await createTestQuestion(config.categoria_id, config.id, config.cantidad_preguntas, prueba.semestre);
+                    await updateTestQuestions(config.categoria_id, config.id, config.cantidad_preguntas, prueba.semestre, res);
 
                 }
 
