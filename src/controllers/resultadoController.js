@@ -4,6 +4,7 @@ import Inscripcion from "../models/Inscripcion.js";
 import Resultado from "../models/Resultado.js";
 import Categoria from "../models/Categoria.js";
 import ConfiguracionCategoria from "../models/ConfiguracionCategoria.js";
+import User from "../models/Usuario.js";
 
 
 /* --------- getResultadoEstudiante function -------------- */
@@ -92,6 +93,9 @@ const getResultadoEstudianteAdmin = async (req, res, next) => {
         // Obtenemos el identificador del usuario y el id de la convocatoria donde obtendremos los resultados
         const { userId, convocatoriaId  } = req.params;
 
+        // Obtenemos el info del usuario
+        const user = await User.findByPk(userId);
+
         // Obtenemos los datos de la prueba del usuario mediante la inscripcion asociada a la convocatoria
         const inscripcion = await Inscripcion.findOne({
             where: {
@@ -150,7 +154,14 @@ const getResultadoEstudianteAdmin = async (req, res, next) => {
         res.status(200).json({
             nombre_prueba: inscripcion.Convocatoria.Prueba.nombre,
             puntaje_total_prueba: inscripcion.Convocatoria.Prueba.puntaje_total,
-            resultados: resultadosPorCategoria
+            resultados: resultadosPorCategoria,
+            userInfo: {
+                nombre: user.nombre,
+                apellido: user.apellido,
+                email: user.email,
+                codigo: user.codigo,
+                semestre: user.semestre
+            }
         });
 
     }catch(error){
