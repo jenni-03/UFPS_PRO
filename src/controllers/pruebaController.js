@@ -377,7 +377,7 @@ const updateTest = async (req, res, next) => {
                         transaction: t
                     });
 
-                    await updateTestQuestions(config.categoria_id, config.id, total_preguntas, prueba.semestre, res, t);
+                    await updateTestQuestions(config.categoria_id, config.id, preguntas, prueba.semestre, res, t);
 
                 }
 
