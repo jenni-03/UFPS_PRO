@@ -18,8 +18,15 @@ const router = Router();
 
 // @desc Endpoint encargado de la obtención de los resultados obtenidos en una convocatoria especifica
 // @route GET /api/resultados/estudiante/:id
-// @access solo Admin
+// @access solo Estudiantes
 router.get('/estudiante/:id', [extractToken, authJWT], resultController.getResultadoEstudiante);
+
+
+// @desc Endpoint encargado de la obtención de los resultados obtenidos por un estudiante en una convocatoria especifica
+// @route GET /api/resultados/estudiante/:userId/convocatoria/:convocatoriaId
+// @access solo Admin
+router.get('/estudiante/:userId/convocatoria/:convocatoriaId', [extractToken, authJWT, isAdmin], resultController.getResultadoEstudianteAdmin);
+
 
 // @desc Endpoint encargado de la obtención de metricas basicas para los resultados globales de una convocatoria
 // @route GET /api/resultados/convocatoria/:id

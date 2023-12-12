@@ -83,6 +83,85 @@ const getResultadoEstudiante = async (req, res, next) => {
 };
 
 
+/* --------- getResultadoEstudianteAdmin function -------------- */
+
+const getResultadoEstudianteAdmin = async (req, res, next) => {
+
+    try{ 
+
+        // Obtenemos el identificador del usuario y el id de la convocatoria donde obtendremos los resultados
+        const { userId, convocatoriaId  } = req.params;
+
+        // Obtenemos los datos de la prueba del usuario mediante la inscripcion asociada a la convocatoria
+        const inscripcion = await Inscripcion.findOne({
+            where: {
+                usuario_id: userId,
+                convocatoria_id: convocatoriaId
+            },
+            include: [
+                {
+                    model: Convocatoria,
+                    include: {
+                        model: Prueba,
+                        attributes: ['nombre', 'puntaje_total'],
+                        include: {
+                            model: ConfiguracionCategoria,
+                            attributes: ['valor_categoria'],
+                            include: {
+                                model: Categoria,
+                                attributes: ['id', 'nombre']
+                            }
+                        }
+                    }
+                },
+                {
+                    model: Resultado,
+                    attributes: ['puntaje', 'categoria_id']
+                }
+            ]
+        });
+
+        // Verificamos la existencia de la inscripcion
+        if (!inscripcion) {
+            return res.status(400).json({ error: 'Usted no posee ninguna inscripción a la convocatoria especificada' });
+        }
+
+        // Verificamos que la convocatoria ya haya finalizado
+        if (inscripcion.Convocatoria.estado) {
+            return res.status(400).json({ error: 'Debe esperar a la finalización de la convocatoria para poder observar los resultados' })
+        }
+
+       // Creamos un mapa de resultados por id de categoría
+        const resultadosMap = inscripcion.Resultados.reduce((map, resultado) => {
+            map[resultado.categoria_id] = resultado;
+            return map;
+        }, {});
+
+        // Organizamos los resultados por categoría
+        const resultadosPorCategoria = inscripcion.Convocatoria.Prueba.Configuraciones_categorias.map(configuracionCategoria => {
+            const resultado = resultadosMap[configuracionCategoria.Categoria.id];
+            return {
+                nombre_categoria: configuracionCategoria.Categoria.nombre,
+                valor_categoria: configuracionCategoria.valor_categoria,
+                puntaje: resultado ? resultado.puntaje : 0
+            };
+        });
+
+        res.status(200).json({
+            nombre_prueba: inscripcion.Convocatoria.Prueba.nombre,
+            puntaje_total_prueba: inscripcion.Convocatoria.Prueba.puntaje_total,
+            resultados: resultadosPorCategoria
+        });
+
+    }catch(error){
+        const errorGetResEstAdmin = new Error(`Ocurrio un problema al obtener el resultado de la prueba del usuario - ${error.message}`);
+        errorGetResEstAdmin.stack = error.stack; 
+        next(errorGetResEstAdmin);
+    }
+
+};
+
+
 /* --------- getMetricasResultadosConvocatoria function -------------- */
 
 const getMetricasResultadosConvocatoria = async (req, res, next) => {
@@ -175,7 +254,8 @@ const getMetricasResultadosConvocatoria = async (req, res, next) => {
 const resultadoController = {
 
     getResultadoEstudiante,
-    getMetricasResultadosConvocatoria
+    getMetricasResultadosConvocatoria,
+    getResultadoEstudianteAdmin
 
 }
 
