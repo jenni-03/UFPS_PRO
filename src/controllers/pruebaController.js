@@ -295,20 +295,43 @@ const updateTest = async (req, res, next) => {
         }
 
         
-        // Validamos que los nuevos porcentajes sean coincidentes
+        // Validamos que los nuevos porcentajes y cantidad de preguntas sean coincidentes
         let valor_total_categorias = 0;
+        let cant_total_preguntas = 0;
 
-        // Validamos los porcentajes ingresados para las categotrias 
+        // Validamos que los porcentajes ingresados y el nuevo número de preguntas para las categotrias 
         // no supere el maximo posible
         for (const valores of valoresCategorias){
-                
-            valor_total_categorias += validate_percentage_categories(valores, res);
             
+            if (valores[0] !== 0 && valores[1] !== 0){
+
+                valor_total_categorias += validate_percentage_categories(valores, res);
+                cant_total_preguntas += valores[2];
+
+            }else{
+
+                // Eliminamos las categorias descartadas
+                await ConfiguracionCategoria.destroy({
+                    where: {
+                        categoria_id: valores[0],
+                        prueba_id: id
+                    }
+                });
+
+            }
+
         }
+
+        // Excluimos las categorias descartadas
+        const valorCategoriasFinal = valoresCategorias.filter(valorCategoria => valorCategoria[0] !== 0 && valorCategoria[1] !== 0);
 
         // Validamos el valor total de las categorias
         if(valor_total_categorias > 100 || valor_total_categorias < 100){
             return res.status(400).json({error: 'El valor total de las categorias no coincide con el 100% designado'});
+        }
+
+        if(cant_total_preguntas !== total_preguntas){
+            return res.status(400).json({error: 'La cantidad de preguntas por categorias no coincide con el total designado'});
         }
 
 
@@ -321,6 +344,7 @@ const updateTest = async (req, res, next) => {
                 descripcion,
                 duracion,
                 estado,
+                total_preguntas, 
                 puntaje_total
             }, {
                 transaction: t
@@ -328,11 +352,12 @@ const updateTest = async (req, res, next) => {
 
 
             // Actualizamos los valores de cada una de las categorias
-            for(const valorCategoria of valoresCategorias){
+            for(const valorCategoria of valorCategoriasFinal){
 
-                // Obtenemos el id de la categoria
+                // Obtenemos los datos de la categoria
                 const categoriaId = valorCategoria[0];
                 const percentage = valorCategoria[1];
+                const preguntas = valorCategoria[2];
 
                 // Actualizamos la configuración
                 const config = await ConfiguracionCategoria.findOne({
@@ -342,14 +367,8 @@ const updateTest = async (req, res, next) => {
                     }
                 });
 
-                config.valor_categoria = percentage;
-
-                await config.save({
-                    transaction: t
-                });
-
-                // Actualizamos las preguntas en caso de que el total cambie
-                if (total_preguntas !== prueba.total_preguntas){
+                // Actualizamos las preguntas de la categoria en caso de que su valor cambie
+                if (preguntas !== config.cantidad_preguntas){
 
                     await PreguntaConfiguracion.destroy({
                         where: {
@@ -361,6 +380,13 @@ const updateTest = async (req, res, next) => {
                     await updateTestQuestions(config.categoria_id, config.id, total_preguntas, prueba.semestre, res, t);
 
                 }
+
+                config.valor_categoria = percentage;
+                config.cantidad_preguntas = preguntas;
+
+                await config.save({
+                    transaction: t
+                });
 
             }
 

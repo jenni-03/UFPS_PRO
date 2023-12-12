@@ -1,4 +1,5 @@
 import { DataTypes } from 'sequelize';
+import PreguntaConfiguracion from './PreguntaConfiguracion.js';
 
 //Importamos el objeto de conexión
 import sequelize from '../database/db.js';
@@ -46,6 +47,19 @@ const ConfiguracionCategoria = sequelize.define('Configuraciones_categorias', {
         }
     }
 }, {
+    hooks: {
+
+        beforeDestroy: async (configuracionCategoria, options) => {
+            try{
+                await PreguntaConfiguracion.destroy({ where: { configuracion_categoria_id: configuracionCategoria.id } })
+            }catch(err){
+                const errorDelete = new Error(`Error al intentar eliminar las preguntas de la prueba con ID ${configuracionCategoria.prueba_id} de la categoria ${configuracionCategoria.categoria_id}`);
+                errorDelete.stack = err.stack; 
+                throw errorDelete; 
+            }
+        }
+
+    },
     timestamps: true,
     createdAt: 'fecha_creacion',
     updatedAt: 'fecha_actualizacion',
