@@ -267,7 +267,7 @@ const updateTest = async (req, res, next) => {
     const {id} = req.params;
 
     // Obtenemos los datos a actualizar
-    const { nombre, descripcion, duracion, estado, puntaje_total, total_preguntas, valoresCategorias } = req.body;
+    const { nombre, descripcion, duracion, estado, total_preguntas, valoresCategorias } = req.body;
 
     try{
 
@@ -344,8 +344,7 @@ const updateTest = async (req, res, next) => {
                 descripcion,
                 duracion,
                 estado,
-                total_preguntas, 
-                puntaje_total
+                total_preguntas
             }, {
                 transaction: t
             });

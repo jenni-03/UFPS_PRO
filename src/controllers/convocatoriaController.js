@@ -901,6 +901,7 @@ const terminarPrueba = async (req, res, next) => {
 
         // Actualizamos la fecha de terminación de la prueba
         await inscripcion.update({ 
+            tiempo_restante_prueba: 0,
             fecha_finalizacion_prueba: moment().tz('America/Bogota')
         });
 

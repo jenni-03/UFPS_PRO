@@ -127,7 +127,7 @@ const getResultadoEstudianteAdmin = async (req, res, next) => {
 
         // Verificamos la existencia de la inscripcion
         if (!inscripcion) {
-            return res.status(400).json({ error: 'Usted no posee ninguna inscripción a la convocatoria especificada' });
+            return res.status(400).json({ error: 'El estudiante no posee ninguna inscripción a la convocatoria especificada' });
         }
 
         // Verificamos que la convocatoria ya haya finalizado
@@ -262,11 +262,74 @@ const getMetricasResultadosConvocatoria = async (req, res, next) => {
 };
 
 
+/* --------- getResultadosGlobalEstudiante function -------------- */
+
+const getResultadosGlobalEstudiante = async (req, res, next) => {
+
+    try{ 
+
+        // Obtenemos el identificador del usuario
+        const userId = req.params.id;
+
+        // Obtenemos todas las inscripciones del usuario a convocatorias ya finalizadas
+        const inscripciones = await Inscripcion.findAll({
+            where: {
+                usuario_id: userId,
+                estado: 0
+            },
+            include: [
+                {
+                    model: Convocatoria,
+                    include: {
+                        model: Prueba,
+                        attributes: ['nombre']
+                    }
+                },
+                {
+                    model: Resultado,
+                    attributes: ['puntaje']
+                }
+            ]
+        });
+
+        // Verificamos la 
+        if (inscripciones.length == 0) {
+            return res.status(200).json([]);
+        }
+
+        // Calculamos los puntajes globales de las pruebas que presento el estudiante
+        const resultados_pruebas = [];
+
+        for (let inscripcion of inscripciones){
+
+            const infoPrueba = {
+                prueba: '',
+                puntaje: 0
+            };
+
+            infoPrueba.prueba = inscripcion.Convocatoria.Prueba.nombre;
+            infoPrueba.puntaje = inscripcion.Resultados.reduce((acumulador, resultado) => acumulador + resultado.puntaje, 0);
+            resultados_pruebas.push(infoPrueba);
+
+        }
+
+        res.status(200).json(resultados_pruebas);
+
+    }catch(error){
+        const errorGetResEstGlobales = new Error(`Ocurrio un problema al obtener los resultados globales del usuario - ${error.message}`);
+        errorGetResEstGlobales.stack = error.stack; 
+        next(errorGetResEstGlobales);
+    }
+
+};
+
+
 const resultadoController = {
 
     getResultadoEstudiante,
     getMetricasResultadosConvocatoria,
-    getResultadoEstudianteAdmin
+    getResultadoEstudianteAdmin,
+    getResultadosGlobalEstudiante
 
 }
 

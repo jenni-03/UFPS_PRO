@@ -33,5 +33,11 @@ router.get('/estudiante/:userId/convocatoria/:convocatoriaId', [extractToken, au
 // @access solo Admin
 router.get('/convocatoria/:id', [extractToken, authJWT, isAdmin], resultController.getMetricasResultadosConvocatoria);
 
+
+// @desc Endpoint encargado de la obtención de los resultados globales obtenidos por el estudiante en todas sus convocatorias
+// @route GET /api/resultados/estudiante/:id/global
+// @access solo Admin
+router.get('/estudiante/:id/global', [extractToken, authJWT, isAdmin], resultController.getResultadosGlobalEstudiante);
+
 // Exportamos el router
 export default router;
