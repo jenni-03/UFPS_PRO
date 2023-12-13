@@ -5,6 +5,8 @@ import Resultado from "../models/Resultado.js";
 import Categoria from "../models/Categoria.js";
 import ConfiguracionCategoria from "../models/ConfiguracionCategoria.js";
 import User from "../models/Usuario.js";
+import moment from 'moment';
+import { Op } from 'sequelize';
 
 
 /* --------- getResultadoEstudiante function -------------- */
@@ -271,6 +273,22 @@ const getResultadosGlobalEstudiante = async (req, res, next) => {
         // Obtenemos el identificador del usuario
         const userId = req.params.id;
 
+        // Obtenemos las fechas de filtrado para las convocatorias
+        let { fecha_inicio, fecha_fin } = req.body;
+
+        // Validamos que la fechas sean coherentes
+        const validInicio = moment(fecha_inicio, true).tz('America/Bogota').isValid();
+        const validFin = moment(fecha_fin, true).tz('America/Bogota').isValid();
+
+        if (!validInicio|| !validFin) return res.status(400).json({ error: 'Las fechas proporcionadas no poseen un formato valido' });
+
+        fecha_inicio = moment(fecha_inicio).tz('America/Bogota');
+        fecha_fin = moment(fecha_fin).tz('America/Bogota');
+
+        if(fecha_inicio.isAfter(fecha_fin)) {
+            return res.status(400).json({ error: 'La fecha de inicio del filtro no puede ser mayor que la de fin' });
+        }
+
         // Obtenemos todas las inscripciones del usuario a convocatorias ya finalizadas
         const inscripciones = await Inscripcion.findAll({
             where: {
@@ -280,6 +298,14 @@ const getResultadosGlobalEstudiante = async (req, res, next) => {
             include: [
                 {
                     model: Convocatoria,
+                    where: {
+                        fecha_fin: {
+                            [Op.and]: {
+                                [Op.gt]: fecha_inicio,
+                                [Op.lt]: fecha_fin
+                            }
+                        }
+                    },
                     include: {
                         model: Prueba,
                         attributes: ['nombre']
