@@ -285,8 +285,8 @@ const getResultadosGlobalEstudiante = async (req, res, next) => {
         fecha_inicio = moment(fecha_inicio).tz('America/Bogota');
         fecha_fin = moment(fecha_fin).tz('America/Bogota');
 
-        if(fecha_inicio.isAfter(fecha_fin)) {
-            return res.status(400).json({ error: 'La fecha de inicio del filtro no puede ser mayor que la de fin' });
+        if(fecha_inicio.isSameOrAfter(fecha_fin)) {
+            return res.status(400).json({ error: 'La fecha de inicio del filtro no puede ser mayor o igual que la de fin' });
         }
 
         // Obtenemos todas las inscripciones del usuario a convocatorias ya finalizadas
@@ -302,8 +302,8 @@ const getResultadosGlobalEstudiante = async (req, res, next) => {
                     where: {
                         fecha_fin: {
                             [Op.and]: {
-                                [Op.gte]: fecha_inicio,
-                                [Op.lte]: fecha_fin
+                                [Op.gt]: fecha_inicio,
+                                [Op.lt]: fecha_fin
                             }
                         }
                     }
