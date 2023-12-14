@@ -298,6 +298,7 @@ const getResultadosGlobalEstudiante = async (req, res, next) => {
             include: [
                 {
                     model: Convocatoria,
+                    attributes: ['nombre'],
                     where: {
                         fecha_fin: {
                             [Op.and]: {
@@ -305,10 +306,6 @@ const getResultadosGlobalEstudiante = async (req, res, next) => {
                                 [Op.lt]: fecha_fin
                             }
                         }
-                    },
-                    include: {
-                        model: Prueba,
-                        attributes: ['nombre']
                     }
                 },
                 {
@@ -333,7 +330,7 @@ const getResultadosGlobalEstudiante = async (req, res, next) => {
                 puntaje: 0
             };
 
-            infoPrueba.prueba = inscripcion.Convocatoria.Prueba.nombre;
+            infoPrueba.prueba = inscripcion.Convocatoria.nombre;
             infoPrueba.puntaje = inscripcion.Resultados.reduce((acumulador, resultado) => acumulador + resultado.puntaje, 0);
             resultados_pruebas.push(infoPrueba);
 
