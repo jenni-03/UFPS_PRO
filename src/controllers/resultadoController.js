@@ -417,7 +417,7 @@ const getResultadosGlobalEstudianteCategorias = async (req, res, next) => {
 
             for (let resultado of inscripcion.Resultados) {
 
-                info_prueba[resultado.Categoria.nombre] = resultado ? resultado.puntaje : 0;
+                info_prueba[resultado.Categoria.nombre] = resultado.puntaje ? resultado.puntaje : 0;
 
             }
 
