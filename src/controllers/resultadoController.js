@@ -315,7 +315,7 @@ const getResultadosGlobalEstudiante = async (req, res, next) => {
             ]
         });
 
-        // Verificamos la 
+        // Verificamos la existencia de inscripciones ya finalizadas
         if (inscripciones.length == 0) {
             return res.status(200).json([]);
         }
@@ -347,12 +347,117 @@ const getResultadosGlobalEstudiante = async (req, res, next) => {
 };
 
 
+/* --------- getResultadosGlobalEstudianteCategorias function -------------- */
+
+const getResultadosGlobalEstudianteCategorias = async (req, res, next) => {
+
+    try{ 
+
+        // Obtenemos el identificador del usuario
+        const userId = req.params.id;
+
+        // Obtenemos las fechas de filtrado para las convocatorias
+        let { fecha_inicio, fecha_fin } = req.body;
+
+        // Validamos que la fechas sean coherentes
+        const validInicio = moment(fecha_inicio, true).tz('America/Bogota').isValid();
+        const validFin = moment(fecha_fin, true).tz('America/Bogota').isValid();
+
+        if (!validInicio|| !validFin) return res.status(400).json({ error: 'Las fechas proporcionadas no poseen un formato valido' });
+
+        fecha_inicio = moment(fecha_inicio).tz('America/Bogota');
+        fecha_fin = moment(fecha_fin).tz('America/Bogota');
+
+        if(fecha_inicio.isSameOrAfter(fecha_fin)) {
+            return res.status(400).json({ error: 'La fecha de inicio del filtro no puede ser mayor o igual que la de fin' });
+        }
+
+        // Obtenemos todas las inscripciones del usuario a convocatorias ya finalizadas
+        const inscripciones = await Inscripcion.findAll({
+            where: {
+                usuario_id: userId,
+                estado: 0
+            },
+            include: [
+                {
+                    model: Convocatoria,
+                    attributes: ['nombre'],
+                    where: {
+                        fecha_fin: {
+                            [Op.and]: {
+                                [Op.gt]: fecha_inicio,
+                                [Op.lt]: fecha_fin
+                            }
+                        }
+                    },
+                    include: {
+                        model: Prueba,
+                        attributes: ['nombre', 'puntaje_total'],
+                        include: {
+                            model: ConfiguracionCategoria,
+                            attributes: ['valor_categoria'],
+                            include: {
+                                model: Categoria,
+                                attributes: ['id', 'nombre']
+                            }
+                        }
+                    }
+                },
+                {
+                    model: Resultado,
+                    attributes: ['puntaje', 'categoria_id']
+                }
+            ]
+        });
+
+        // Verificamos la existencia de inscripciones ya finalizadas
+        if (inscripciones.length == 0) {
+            return res.status(200).json([]);
+        }
+
+        // Creamos un mapa de resultados por id de categoría
+        let resultadosPorCategoria = [];
+
+        // Por cada inscripcion calculamos el resultado obtenido por el estudiante segmentado por las categorias a evaluar
+        for (let inscripcion of inscripciones) {
+
+            const info_prueba = {};
+
+            const resultadosMap = inscripcion.Resultados.reduce((map, resultado) => {
+                map[resultado.categoria_id] = resultado;
+                return map;
+            }, {});
+
+            for (let configuracionCategoria of inscripcion.Convocatoria.Prueba.Configuraciones_categorias) {
+
+                const resultado = resultadosMap[configuracionCategoria.Categoria.id];
+                info_prueba[configuracionCategoria.Categoria.nombre] = resultado ? resultado.puntaje : 0;
+
+            }
+
+            resultadosPorCategoria.push(info_prueba)
+
+        }
+
+        res.status(200).json(resultadosPorCategoria);
+
+
+    }catch(error){
+        const errorGetResEstGlobalesCategoria = new Error(`Ocurrio un problema al obtener los resultados globales del usuario por categoria - ${error.message}`);
+        errorGetResEstGlobalesCategoria.stack = error.stack; 
+        next(errorGetResEstGlobalesCategoria);
+    }
+
+};
+
+
 const resultadoController = {
 
     getResultadoEstudiante,
     getMetricasResultadosConvocatoria,
     getResultadoEstudianteAdmin,
-    getResultadosGlobalEstudiante
+    getResultadosGlobalEstudiante,
+    getResultadosGlobalEstudianteCategorias
 
 }
 
