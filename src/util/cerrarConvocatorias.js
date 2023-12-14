@@ -49,7 +49,7 @@ const cerrarConvocatoriasVencidas = async () => {
                 await convocatoria.update({ estado: 0 });
 
                 // Desactivamos las inscripciones asociadas a la convocatoria
-                await Inscripcion.update({ estado: 0 }, {
+                await Inscripcion.update({ tiempo_restante_prueba: 0, estado: 0 }, {
                     where: {
                         convocatoria_id: convocatoria.id
                     }
