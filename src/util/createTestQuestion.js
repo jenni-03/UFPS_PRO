@@ -31,7 +31,7 @@ export const asignQuestions = async (pruebaId, semestre) => {
 
 
 /**
- * Función encargado de escoger aleatoriamente las preguntas a asignar de una categoria especifica
+ * Función encargada de escoger aleatoriamente las preguntas a asignar de una categoria especifica
  * @param {number} id_categoria 
  * @param {number} id_configuracion 
  * @param {number} cant_preguntas_categoria 
@@ -59,6 +59,50 @@ const createTestQuestion = async (id_categoria, id_configuracion, cant_preguntas
         await PreguntaConfiguracion.create({
             pregunta_id: question.id,
             configuracion_categoria_id: id_configuracion
+        });
+
+    }
+
+}
+
+
+/**
+ * Función encargada de actualizar las preguntas a asignar de una categoria especifica
+ * @param {number} id_categoria 
+ * @param {number} id_configuracion 
+ * @param {number} cant_preguntas_categoria 
+ * @param {number} semestre 
+ * @param {object} res 
+ */
+export const updateTestQuestions = async (id_categoria, id_configuracion, cant_preguntas_categoria, semestre, res, t) => {
+
+
+    //Obtenemos las preguntas que pertenecen al semestre y a la categoria designados
+    const questions = await Pregunta.findAll({
+        where: {
+            categoria_id: id_categoria,
+            semestre: {
+                [Op.lte]: semestre,
+            },
+            estado: 1
+        }
+    })
+
+    if (questions.length < cant_preguntas_categoria){
+        res.status(400);
+        throw new Error('El número de preguntas solicitadas supera las actualmente disponibles');
+    }
+
+    const questions_to_be_assigned = lodash.sampleSize(questions, cant_preguntas_categoria);
+
+    for (const question of questions_to_be_assigned) {
+
+        //agregamos la pregunta a la prueba
+        await PreguntaConfiguracion.create({
+            pregunta_id: question.id,
+            configuracion_categoria_id: id_configuracion
+        }, {
+            transaction: t
         });
 
     }

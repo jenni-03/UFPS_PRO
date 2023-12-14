@@ -45,5 +45,11 @@ router.post('/create', [extractToken, authJWT, isAdmin, validateTestData], testC
 router.put('/update/:id', [extractToken, authJWT, isAdmin, validateTestData], testController.updateTest);
 
 
+// @desc Endpoint encargado de obtener las preguntas de una prueba para su visualizacion
+// @route GET /api/prueba/preguntas/:id
+// @access solo Admin
+router.get('/preguntas/:id', [extractToken, authJWT, isAdmin, validateTestData], testController.getPrevisualizedQuestions);
+
+
 // Exportamos el router
 export default router;

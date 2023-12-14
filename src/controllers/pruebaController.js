@@ -2,12 +2,14 @@ import Prueba from '../models/Prueba.js';
 import Competencia  from '../models/Competencia.js';
 import ConfiguracionCategoria from '../models/ConfiguracionCategoria.js';
 import { validate_percentage_categories, asignValueCategories } from '../util/validateDataCategories.js';
-import { asignCompetences, asignQuestions } from '../util/createTestQuestion.js';
+import { asignCompetences, asignQuestions, updateTestQuestions } from '../util/createTestQuestion.js';
 import sequelize from '../database/db.js';
 import Categoria from '../models/Categoria.js';
 import Inscripcion from '../models/Inscripcion.js';
 import Resultado from '../models/Resultado.js';
 import Convocatoria from '../models/Convocatoria.js';
+import PreguntaConfiguracion from '../models/PreguntaConfiguracion.js';
+import Pregunta from '../models/Pregunta.js';
 
 
 /* --------- getAllTests function -------------- */
@@ -164,7 +166,7 @@ const getTestId = async (req, res, next) => {
         const prueba = await Prueba.findByPk(id, {
             include: {
                 model: ConfiguracionCategoria,
-                attributes: ['categoria_id', 'valor_categoria'],
+                attributes: ['categoria_id', 'valor_categoria', 'cantidad_preguntas'],
                 include: [
                     {
                         model: Categoria,
@@ -172,7 +174,7 @@ const getTestId = async (req, res, next) => {
                     }
                 ]
             },
-            attributes: ['id', 'nombre', 'descripcion', 'duracion', 'estado', 'puntaje_total']
+            attributes: ['id', 'nombre', 'descripcion', 'duracion', 'estado', 'puntaje_total', 'total_preguntas']
         });
 
         if(!prueba){
@@ -265,7 +267,7 @@ const updateTest = async (req, res, next) => {
     const {id} = req.params;
 
     // Obtenemos los datos a actualizar
-    const { nombre, descripcion, duracion, estado, puntaje_total, valoresCategorias } = req.body;
+    const { nombre, descripcion, duracion, estado, total_preguntas, valoresCategorias } = req.body;
 
     try{
 
@@ -287,21 +289,49 @@ const updateTest = async (req, res, next) => {
             return res.status(400).json({error: `El nombre de prueba ${nombre} ya se encuentra registrado`});
         }
 
-        
-        // Validamos que los nuevos porcentajes sean coincidentes
-        let valor_total_categorias = 0;
+        // Validamos que la nueva cantidad de preguntas no sea menor o igual a 0
+        if(total_preguntas <= 1){
+            return res.status(400).json({error: 'La cantidad de preguntas minima debe ser mayor de 1'});
+        }
 
-        // Validamos los porcentajes ingresados para las categotrias 
+        
+        // Validamos que los nuevos porcentajes y cantidad de preguntas sean coincidentes
+        let valor_total_categorias = 0;
+        let cant_total_preguntas = 0;
+
+        // Validamos que los porcentajes ingresados y el nuevo número de preguntas para las categotrias 
         // no supere el maximo posible
         for (const valores of valoresCategorias){
-                
-            valor_total_categorias += validate_percentage_categories(valores, res);
             
+            if (valores[0] !== 0 && valores[1] !== 0){
+
+                valor_total_categorias += validate_percentage_categories(valores, res);
+                cant_total_preguntas += valores[2];
+
+            }else{
+
+                // Eliminamos las categorias descartadas
+                await ConfiguracionCategoria.destroy({
+                    where: {
+                        categoria_id: valores[0],
+                        prueba_id: id
+                    }
+                });
+
+            }
+
         }
+
+        // Excluimos las categorias descartadas
+        const valorCategoriasFinal = valoresCategorias.filter(valorCategoria => valorCategoria[0] !== 0 && valorCategoria[1] !== 0);
 
         // Validamos el valor total de las categorias
         if(valor_total_categorias > 100 || valor_total_categorias < 100){
             return res.status(400).json({error: 'El valor total de las categorias no coincide con el 100% designado'});
+        }
+
+        if(cant_total_preguntas !== total_preguntas){
+            return res.status(400).json({error: 'La cantidad de preguntas por categorias no coincide con el total designado'});
         }
 
 
@@ -314,30 +344,51 @@ const updateTest = async (req, res, next) => {
                 descripcion,
                 duracion,
                 estado,
-                puntaje_total
+                total_preguntas
             }, {
                 transaction: t
             });
 
 
             // Actualizamos los valores de cada una de las categorias
-            for(const valorCategoria of valoresCategorias){
+            for(const valorCategoria of valorCategoriasFinal){
 
-                // Obtenemos el id de la categoria
+                // Obtenemos los datos de la categoria
                 const categoriaId = valorCategoria[0];
                 const percentage = valorCategoria[1];
+                const preguntas = valorCategoria[2];
 
                 // Actualizamos la configuración
-                await ConfiguracionCategoria.update({
-                    valor_categoria: percentage
-                }, {
+                const config = await ConfiguracionCategoria.findOne({
                     where: {
                         categoria_id: categoriaId,
                         prueba_id: id
-                    }, transaction: t
+                    }
+                });
+
+                // Actualizamos las preguntas de la categoria en caso de que su valor cambie
+                if (preguntas !== config.cantidad_preguntas){
+
+                    await PreguntaConfiguracion.destroy({
+                        where: {
+                            configuracion_categoria_id: config.id
+                        },
+                        transaction: t
+                    });
+
+                    await updateTestQuestions(config.categoria_id, config.id, preguntas, prueba.semestre, res, t);
+
+                }
+
+                config.valor_categoria = percentage;
+                config.cantidad_preguntas = preguntas;
+
+                await config.save({
+                    transaction: t
                 });
 
             }
+
 
         });
 
@@ -352,12 +403,65 @@ const updateTest = async (req, res, next) => {
 };
 
 
+/* --------- getPrevisualizedQuestions function -------------- */
+
+const getPrevisualizedQuestions = async (req, res, next) => {
+
+    // Obtenemos el id de la prueba
+    const {id} = req.params;
+
+    try{
+
+        // Obtenemos la prueba asociada a la convocatoria
+        const prueba = await Prueba.findByPk(id, {
+
+            include: {
+                model: ConfiguracionCategoria,
+                as: 'Configuraciones_categorias',
+                include: {
+                    model: Pregunta,
+                    attributes: ['id', 'texto_pregunta', 'opciones', 'imagen'],
+                    as: 'Preguntas',
+                    through: {
+                        attributes: []
+                    }
+                }
+            }
+
+        });
+
+        if(!prueba){
+            return res.status(400).json({ error: 'No se encuentra la prueba especificada' });
+        }
+
+        let preguntas = [];
+
+        for (let configuracionCategoria of prueba.Configuraciones_categorias){
+
+            configuracionCategoria.Preguntas.map(pregunta => {
+                preguntas.push({ id: pregunta.id, texto: pregunta.texto_pregunta, opciones: JSON.parse(pregunta.opciones), imagen: pregunta.imagen });
+            });
+
+        }
+
+        return res.status(200).json(preguntas);
+
+    }catch(error){
+        const errorGetQuestConv = new Error(`Ocurrio un problema al obtener las preguntas asociadas a la prueba - ${error.message}`);
+        errorGetQuestConv .stack = error.stack; 
+        next(errorGetQuestConv);
+    }
+
+};
+
+
 const testController = {
     getAllTests,
     getTestId, 
     createTest,
     updateTest,
-    getTestsStudents
+    getTestsStudents,
+    getPrevisualizedQuestions
 };
 
 export default testController;

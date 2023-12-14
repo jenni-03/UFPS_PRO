@@ -18,13 +18,32 @@ const router = Router();
 
 // @desc Endpoint encargado de la obtención de los resultados obtenidos en una convocatoria especifica
 // @route GET /api/resultados/estudiante/:id
-// @access solo Admin
+// @access solo Estudiantes
 router.get('/estudiante/:id', [extractToken, authJWT], resultController.getResultadoEstudiante);
+
+
+// @desc Endpoint encargado de la obtención de los resultados obtenidos por un estudiante en una convocatoria especifica
+// @route GET /api/resultados/estudiante/:userId/convocatoria/:convocatoriaId
+// @access solo Admin
+router.get('/estudiante/:userId/convocatoria/:convocatoriaId', [extractToken, authJWT, isAdmin], resultController.getResultadoEstudianteAdmin);
+
 
 // @desc Endpoint encargado de la obtención de metricas basicas para los resultados globales de una convocatoria
 // @route GET /api/resultados/convocatoria/:id
 // @access solo Admin
 router.get('/convocatoria/:id', [extractToken, authJWT, isAdmin], resultController.getMetricasResultadosConvocatoria);
+
+
+// @desc Endpoint encargado de la obtención de los resultados globales obtenidos por el estudiante en todas sus convocatorias
+// @route POST /api/resultados/estudiante/:id/global
+// @access solo Admin
+router.post('/estudiante/:id/global', [extractToken, authJWT, isAdmin], resultController.getResultadosGlobalEstudiante);
+
+
+// @desc Endpoint encargado de la obtención de los resultados globales obtenidos por el estudiante en todas sus convocatorias segmentado por categorias
+// @route POST /api/resultados/estudiante/:id/global/categorias
+// @access solo Admin
+router.post('/estudiante/:id/global/categorias', [extractToken, authJWT, isAdmin], resultController.getResultadosGlobalEstudianteCategorias);
 
 // Exportamos el router
 export default router;
