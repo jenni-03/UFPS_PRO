@@ -35,13 +35,13 @@ router.get('/convocatoria/:id', [extractToken, authJWT, isAdmin], resultControll
 
 
 // @desc Endpoint encargado de la obtención de los resultados globales obtenidos por el estudiante en todas sus convocatorias
-// @route GET /api/resultados/estudiante/:id/global
+// @route POST /api/resultados/estudiante/:id/global
 // @access solo Admin
 router.post('/estudiante/:id/global', [extractToken, authJWT, isAdmin], resultController.getResultadosGlobalEstudiante);
 
 
 // @desc Endpoint encargado de la obtención de los resultados globales obtenidos por el estudiante en todas sus convocatorias segmentado por categorias
-// @route GET /api/resultados/estudiante/:id/global/categorias
+// @route POST /api/resultados/estudiante/:id/global/categorias
 // @access solo Admin
 router.post('/estudiante/:id/global/categorias', [extractToken, authJWT, isAdmin], resultController.getResultadosGlobalEstudianteCategorias);
 

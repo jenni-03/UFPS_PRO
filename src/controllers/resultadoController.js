@@ -389,23 +389,15 @@ const getResultadosGlobalEstudianteCategorias = async (req, res, next) => {
                                 [Op.lt]: fecha_fin
                             }
                         }
-                    },
-                    include: {
-                        model: Prueba,
-                        attributes: ['nombre', 'puntaje_total'],
-                        include: {
-                            model: ConfiguracionCategoria,
-                            attributes: ['valor_categoria'],
-                            include: {
-                                model: Categoria,
-                                attributes: ['id', 'nombre']
-                            }
-                        }
                     }
                 },
                 {
                     model: Resultado,
-                    attributes: ['puntaje', 'categoria_id']
+                    attributes: ['puntaje', 'categoria_id'],
+                    include: {
+                        model: Categoria,
+                        attributes: ['id', 'nombre']
+                    }
                 }
             ]
         });
@@ -423,15 +415,9 @@ const getResultadosGlobalEstudianteCategorias = async (req, res, next) => {
 
             const info_prueba = {};
 
-            const resultadosMap = inscripcion.Resultados.reduce((map, resultado) => {
-                map[resultado.categoria_id] = resultado;
-                return map;
-            }, {});
+            for (let resultado of inscripcion.Resultados) {
 
-            for (let configuracionCategoria of inscripcion.Convocatoria.Prueba.Configuraciones_categorias) {
-
-                const resultado = resultadosMap[configuracionCategoria.Categoria.id];
-                info_prueba[configuracionCategoria.Categoria.nombre] = resultado ? resultado.puntaje : 0;
+                info_prueba[resultado.Categoria.nombre] = resultado ? resultado.puntaje : 0;
 
             }
 
