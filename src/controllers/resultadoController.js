@@ -302,8 +302,8 @@ const getResultadosGlobalEstudiante = async (req, res, next) => {
                     where: {
                         fecha_fin: {
                             [Op.and]: {
-                                [Op.gt]: fecha_inicio,
-                                [Op.lt]: fecha_fin
+                                [Op.gte]: fecha_inicio,
+                                [Op.lte]: fecha_fin
                             }
                         }
                     }
